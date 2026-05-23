@@ -1,0 +1,33 @@
+---
+const base = import.meta.env.BASE_URL;
+const pathname = Astro.url.pathname;
+
+const links = [
+  { href: base, label: 'Hoje' },
+  { href: `${base}/navegar`, label: 'Navegar' },
+];
+---
+
+<nav class="sticky top-0 z-50 bg-gray-950/95 backdrop-blur border-b border-gray-800">
+  <div class="max-w-4xl mx-auto px-4 flex items-center justify-between h-14">
+    <a href={base} class="font-semibold text-gray-100 hover:text-white transition-colors">
+      ✦ Lecionário
+    </a>
+    <ul class="flex gap-1">
+      {links.map(({ href, label }) => (
+        <li>
+          <a
+            href={href}
+            class={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              pathname === href
+                ? 'bg-gray-800 text-white'
+                : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/50'
+            }`}
+          >
+            {label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</nav>

@@ -1,0 +1,20 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "generate": "tsx src/generate.ts",
+    "generate-daily": "tsx src/generate-daily.ts",
+    "fix-reflexao": "tsx src/fix-reflexao.ts",
+    "format-reflexao": "tsx src/format-reflexao.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3"
+  }
+}

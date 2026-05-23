@@ -1,0 +1,53 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Fix Reflexão (patch arquivos existentes)",
+      "type": "shell",
+      "command": "npm run fix-reflexao",
+      "options": {
+        "cwd": "${workspaceFolder}/scripts"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Gerar Leituras Diárias",
+      "type": "shell",
+      "command": "npm run generate-daily",
+      "options": {
+        "cwd": "${workspaceFolder}/scripts"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Gerar Domingos",
+      "type": "shell",
+      "command": "npm run generate",
+      "options": {
+        "cwd": "${workspaceFolder}/scripts"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

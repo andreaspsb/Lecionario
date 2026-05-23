@@ -1,0 +1,37 @@
+---
+tipo: leitura-diaria
+nome: "Quarta-feira — 7ª Semana do Tempo Comum (Ano B)"
+dia: "quarta"
+ano: "B"
+estacao: "Tempo Comum"
+semana: 7
+domingo: "Próprio 9"
+---
+
+# Quarta-feira — 7ª Semana do Tempo Comum (Ano B)
+
+**Estação Litúrgica:** Tempo Comum — Ano B | Semana do **Próprio 9**
+
+## Leituras
+
+**Via Semicontínua**
+
+| Salmo | Primeira Leitura | Segunda Leitura |
+|-------|-----------------|-----------------|
+| Salmo 21 | 2 Samuel 5:17-25 | João 7:1-9 |
+
+**Via Complementar**
+
+| Salmo | Primeira Leitura | Segunda Leitura |
+|-------|-----------------|-----------------|
+| Salmo 119:81-88 | Jeremias 16:14-21 | João 7:1-9 |
+
+---
+
+## Reflexão
+
+<!-- Texto devocional aqui -->
+
+---
+
+*Lecionário Revisado Comum (RCL) — Leituras Diárias, Ano B*

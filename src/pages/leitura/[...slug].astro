@@ -1,0 +1,81 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import LeiturasTable from '../../components/LeiturasTable.astro';
+import { nomeEstacao, corLiturgica } from '../../lib/liturgicalCalendar';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('leituras');
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content, remarkPluginFrontmatter } = await render(entry);
+
+const { titulo, nome, ano, estacao, tipo } = entry.data;
+const tituloDisplay = titulo ?? nome ?? 'Leitura Litúrgica';
+const cor = corLiturgica(estacao?.toLowerCase() ?? '');
+
+const corHeaderClasses: Record<string, string> = {
+  purple: 'from-purple-950/50 to-transparent border-purple-800/40',
+  white: 'from-blue-950/50 to-transparent border-blue-800/40',
+  red: 'from-red-950/50 to-transparent border-red-800/40',
+  green: 'from-green-950/50 to-transparent border-green-800/40',
+  gray: 'from-gray-900/50 to-transparent border-gray-800/40',
+};
+
+const corBadgeClasses: Record<string, string> = {
+  purple: 'bg-purple-900/40 text-purple-300',
+  white: 'bg-blue-900/40 text-blue-300',
+  red: 'bg-red-900/40 text-red-300',
+  green: 'bg-green-900/40 text-green-300',
+  gray: 'bg-gray-800 text-gray-300',
+};
+
+const base = import.meta.env.BASE_URL;
+---
+
+<Base title={tituloDisplay}>
+  <!-- Cabeçalho com cor litúrgica -->
+  <div class={`rounded-2xl border bg-gradient-to-b p-6 mb-8 ${corHeaderClasses[cor] ?? corHeaderClasses.gray}`}>
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <span class={`text-xs font-medium px-2.5 py-1 rounded-full ${corBadgeClasses[cor] ?? corBadgeClasses.gray}`}>
+        {nomeEstacao(estacao?.toLowerCase() ?? estacao)}
+      </span>
+      <span class="text-xs text-gray-500">Ano {ano}</span>
+      <span class="text-xs text-gray-600">·</span>
+      <span class="text-xs text-gray-500">{tipo}</span>
+    </div>
+    <h1 class="text-2xl font-bold text-white leading-tight">{tituloDisplay}</h1>
+  </div>
+
+  <!-- Conteúdo do arquivo .md renderizado -->
+  <div class="prose prose-invert prose-sm max-w-none
+    prose-headings:font-semibold prose-headings:text-gray-100
+    prose-h2:text-lg prose-h2:mt-8 prose-h2:mb-3
+    prose-p:text-gray-300 prose-p:leading-relaxed
+    prose-table:w-full prose-table:border-collapse
+    prose-td:border prose-td:border-gray-800 prose-td:px-3 prose-td:py-2 prose-td:text-sm
+    prose-th:border prose-th:border-gray-800 prose-th:px-3 prose-th:py-2 prose-th:text-sm
+    prose-strong:text-gray-200
+    prose-hr:border-gray-800
+    prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+    prose-blockquote:border-l-gray-700 prose-blockquote:text-gray-400
+    prose-code:text-gray-300 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded
+    prose-em:text-gray-400">
+    <Content />
+  </div>
+
+  <!-- Navegação -->
+  <div class="mt-12 pt-6 border-t border-gray-800">
+    <a
+      href={`${base}/navegar`}
+      class="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-100 transition-colors"
+    >
+      ← Voltar ao índice
+    </a>
+  </div>
+</Base>

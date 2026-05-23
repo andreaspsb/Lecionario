@@ -1,0 +1,72 @@
+---
+import Base from '../layouts/Base.astro';
+import DayCard from '../components/DayCard.astro';
+import {
+  getDiaLiturgico,
+  previousOrSameSunday,
+  formatarData,
+  nomeEstacao,
+} from '../lib/liturgicalCalendar';
+
+// Calcula o dia litúrgico atual em build time
+const hoje = new Date();
+const diaHoje = getDiaLiturgico(hoje);
+
+// Se hoje não é um dia de destaque, busca o domingo mais recente
+const domingoRecente = previousOrSameSunday(hoje);
+const diaDomingo = getDiaLiturgico(domingoRecente);
+
+const diaAtual = diaHoje ?? diaDomingo;
+const base = import.meta.env.BASE_URL;
+---
+
+<Base title="Lecionário Revisado Comum">
+  <section class="mb-12">
+    <h1 class="text-3xl font-bold text-white mb-2">Lecionário Revisado Comum</h1>
+    <p class="text-gray-400">Leituras para o culto cristão em português — Anos A, B e C</p>
+  </section>
+
+  {diaAtual ? (
+    <section class="mb-12">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+        <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wider">Domingo mais recente</h2>
+      </div>
+      <p class="text-xs text-gray-500 mb-4">{formatarData(domingoRecente)}</p>
+      <DayCard dia={diaAtual} destaque />
+    </section>
+  ) : (
+    <section class="mb-12 p-6 rounded-xl border border-gray-800 text-center text-gray-400">
+      <p>Não foi possível identificar o dia litúrgico atual.</p>
+      <a href={`${base}/navegar`} class="text-blue-400 hover:underline mt-2 inline-block">
+        Navegar pelo índice →
+      </a>
+    </section>
+  )}
+
+  <section>
+    <h2 class="text-lg font-semibold text-gray-100 mb-4">Explorar</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {(['A', 'B', 'C'] as const).map((ano) => (
+        <a
+          href={`${base}/navegar#ano-${ano.toLowerCase()}`}
+          class="block rounded-xl border border-gray-800 bg-gray-900/40 p-5 text-center hover:bg-gray-800/60 transition-colors"
+        >
+          <span class="text-2xl font-bold text-white">Ano {ano}</span>
+          <p class="text-sm text-gray-400 mt-1">
+            {ano === 'A' ? 'Mateus' : ano === 'B' ? 'Marcos' : 'Lucas'}
+          </p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="mt-8">
+    <a
+      href={`${base}/navegar`}
+      class="flex items-center justify-center gap-2 w-full rounded-xl border border-gray-700 px-6 py-4 text-gray-300 hover:bg-gray-800/50 hover:text-white transition-colors"
+    >
+      Ver índice completo →
+    </a>
+  </section>
+</Base>

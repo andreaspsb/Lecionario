@@ -1,0 +1,55 @@
+---
+interface Props {
+  at?: string;
+  salmo?: string;
+  nt?: string;
+  evangelho?: string;
+  primeiraLeitura?: string;
+  segundaLeitura?: string;
+}
+
+const { at, salmo, nt, evangelho, primeiraLeitura, segundaLeitura } = Astro.props;
+---
+
+<div class="overflow-x-auto rounded-lg border border-gray-800">
+  <table class="w-full text-sm">
+    <tbody class="divide-y divide-gray-800">
+      {at && (
+        <tr class="hover:bg-gray-800/30 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-400 w-1/3">Antigo Testamento</td>
+          <td class="px-4 py-3 text-gray-100">{at}</td>
+        </tr>
+      )}
+      {primeiraLeitura && (
+        <tr class="hover:bg-gray-800/30 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-400 w-1/3">1ª Leitura</td>
+          <td class="px-4 py-3 text-gray-100">{primeiraLeitura}</td>
+        </tr>
+      )}
+      {salmo && (
+        <tr class="hover:bg-gray-800/30 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-400 w-1/3">Salmo</td>
+          <td class="px-4 py-3 text-gray-100">{salmo}</td>
+        </tr>
+      )}
+      {nt && (
+        <tr class="hover:bg-gray-800/30 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-400 w-1/3">Novo Testamento</td>
+          <td class="px-4 py-3 text-gray-100">{nt}</td>
+        </tr>
+      )}
+      {segundaLeitura && (
+        <tr class="hover:bg-gray-800/30 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-400 w-1/3">2ª Leitura</td>
+          <td class="px-4 py-3 text-gray-100">{segundaLeitura}</td>
+        </tr>
+      )}
+      {evangelho && (
+        <tr class="hover:bg-gray-800/30 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-400 w-1/3">Evangelho</td>
+          <td class="px-4 py-3 text-gray-100 font-medium">{evangelho}</td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
