@@ -1,10 +1,22 @@
 ---
 import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-import { nomeEstacao, corLiturgica, sortKeyDia } from '../lib/liturgicalCalendar';
+import { nomeEstacao, corLiturgica } from '../lib/liturgicalCalendar';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 // Carrega TODOS os arquivos .md via content collection (domingos, festas e feriais)
 const entries = await getCollection('leituras');
+
+// Constrói mapa de ordenação a partir do sumario.md (fonte da verdade da ordem litúrgica)
+const sumarioPath = join(process.cwd(), 'sumario.md');
+const sumarioText = readFileSync(sumarioPath, 'utf-8');
+const ordemSumario = new Map<string, number>();
+let ordemIdx = 0;
+for (const match of sumarioText.matchAll(/\(([^)]+\.md)\)/g)) {
+  const id = match[1].replace(/\.md$/, ''); // "ano-a/advento/01-domingo"
+  if (!ordemSumario.has(id)) ordemSumario.set(id, ordemIdx++);
+}
 
 const ordemEstacoes = ['advento', 'natal', 'epifania', 'quaresma', 'semana-santa', 'pascoa', 'tempo-comum'];
 
@@ -47,8 +59,12 @@ const ordemAnos = ['A', 'B', 'C'];
 for (const [ano, grupos] of anosMap) {
   grupos.sort((a, b) => ordemEstacoes.indexOf(a.estacao) - ordemEstacoes.indexOf(b.estacao));
   for (const grupo of grupos) {
-    grupo.dias.sort((a, b) => sortKeyDia(a.id) - sortKeyDia(b.id));
-  }
+      grupo.dias.sort((a, b) => {
+        const ka = ordemSumario.get(a.id) ?? 999999;
+        const kb = ordemSumario.get(b.id) ?? 999999;
+        return ka - kb;
+      });
+    }
 }
 const anosOrdenados = [...anosMap.entries()].sort(
   (a, b) => ordemAnos.indexOf(a[0]) - ordemAnos.indexOf(b[0])
