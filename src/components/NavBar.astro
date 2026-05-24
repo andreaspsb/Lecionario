@@ -5,10 +5,11 @@ const pathname = Astro.url.pathname;
 const links = [
   { href: base, label: 'Hoje' },
   { href: `${base}/navegar`, label: 'Navegar' },
+  { href: `${base}/buscar`, label: 'Buscar' },
 ];
 ---
 
-<nav class="sticky top-0 z-50 bg-gray-950/95 backdrop-blur border-b border-gray-800">
+<nav data-pagefind-ignore class="sticky top-0 z-50 bg-gray-950/95 backdrop-blur border-b border-gray-800">
   <div class="max-w-4xl mx-auto px-4 flex items-center justify-between h-14">
     <a href={base} class="font-semibold text-gray-100 hover:text-white transition-colors">
       ✦ Lecionário
