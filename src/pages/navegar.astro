@@ -45,7 +45,12 @@ const anosMap = new Map<string, Grupo[]>();
 for (const entry of entries) {
   const { ano, estacao } = entry.data;
   if (!ano || !estacao) continue;
-  const estKey = estacao.toLowerCase();
+  // Normaliza variantes de estação para a chave canônica (ex: "Tempo Comum (Após Pentecostes)" → "tempo-comum")
+  const estKey = estacao.toLowerCase()
+    .replace(/\s*\(.*\)$/, '')  // remove sufixo entre parênteses
+    .trim()
+    .replace(/\s+/g, '-')       // espaços → hífens
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // remove acentos
   if (!anosMap.has(ano)) anosMap.set(ano, []);
   const grupos = anosMap.get(ano)!;
   let grupo = grupos.find((g) => g.estacao === estKey);
