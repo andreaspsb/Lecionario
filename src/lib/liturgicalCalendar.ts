@@ -302,54 +302,63 @@ export function corLiturgica(estacao: string): string {
 /**
  * Chave de ordenação para dias litúrgicos dentro de uma estação.
  *
- * Convenções de filename (o `id` do entry sem estação):
- *  - `0N-domingo`        → domingos (N=1..9)
- *  - `00a-*`, `00b-*`   → festas antes do 1º domingo (natividade, quarta-cinzas, vigília)
- *  - `semana-N-dia`      → feriais (N=semana, dia=segunda..sábado)
- *  - Nomes festos        → mapa explícito
+ * Convenções de filename (o `id` do entry sem o path do ano/estação):
+ *  - `0N-domingo`          → domingos sequenciais (advento, natal, epifania, quaresma, páscoa)
+ *  - `propN-domingo`       → domingos do Tempo Comum (Próprio N)
+ *  - `semana-N-dia`        → feriais da semana N (segunda=1 … sábado=6)
+ *  - `00[a-z]?-*`          → festas/próprios antes do 1º domingo (vigília, natividade, cinzas)
+ *  - `NNx-*`               → números com letra (06a-palmas, 06b-paixao, 01b-tarde)
+ *  - Nomes festos          → mapa explícito com posição exata
  *
- * Unidade base: cada "semana" ocupa 10 pontos (0..9 dentro da semana).
- * Domingos ficam no ponto 0 de cada bloco de 10.
- * Feriais ficam em 1..6 (seg=1 … sáb=6).
+ * Unidade base: cada semana ocupa 10 pontos.
+ * Domingos ficam no ponto 0 de cada bloco (semana N → N*10).
+ * Feriais ficam em 1..6 dentro do bloco (segunda=1 … sábado=6).
  */
 export function sortKeyDia(id: string): number {
-  // Extrai apenas o último segmento (filename) do id — ex: "ano-a/advento/01-domingo" → "01-domingo"
+  // Extrai apenas o filename sem o path — ex: "ano-a/advento/01-domingo" → "01-domingo"
   const filename = id.split('/').pop() ?? id;
 
-  // Mapa explícito para dias festos nomeados
+  // Mapa explícito para dias festos nomeados (posição entre os props/semanas correspondentes)
   const festosMap: Record<string, number> = {
-    // Natal
+    // Natal (entre dom1=10 e dom2=20)
     'nome-de-jesus': 15,
-    'ano-novo': 16,
-    // Epifania
-    'apresentacao': 45,
+    'ano-novo':       16,
+    // Epifania (apresentação entre dom4=40 e dom5=50; transfiguração após semana-7=76)
+    'apresentacao':  45,
     'transfiguracao': 80,
-    // Quaresma
-    'anunciacao': 55,
-    // Páscoa
-    'ascensao': 65,
-    'pentecostes': 79,
+    // Quaresma (anunciação entre dom5=50 e 06a-palmas=60)
+    'anunciacao':    55,
+    // Páscoa (ascensão entre dom6=60 e dom7=70; pentecostes antes de dom8=79)
+    'ascensao':      65,
+    'pentecostes':   79,
     // Tempo Comum
-    'trindade': 4,
+    'trindade':       4,  // 1º domingo após Pentecostes — antes de prop05 (50)
+    // Santa Cruz (14/set) → entre prop19-semana (191-196) e prop20 (200)
+    'santa-cruz':   198,
+    // Todos os Santos (1/nov) → entre prop25-semana (251-256) e prop26 (260)
+    'todos-os-santos': 257,
+    // Ação de Graças → após prop29 (290)
+    'acao-de-gracas': 295,
   };
   if (filename in festosMap) return festosMap[filename];
 
-  // Ordem dos dias da semana (segunda=1 … sábado=6)
+  // Ordem dos dias da semana dentro de cada bloco (segunda=1 … sábado=6)
   const ordemDia: Record<string, number> = {
-    segunda: 1,
-    terca: 2,
-    quarta: 3,
-    quinta: 4,
-    sexta: 5,
-    sabado: 6,
+    segunda: 1, terca: 2, quarta: 3, quinta: 4, sexta: 5, sabado: 6,
   };
 
-  // Padrão: semana-N-dia (ex: semana-2-quarta)
+  // Padrão: semana-N-dia (ex: semana-2-quarta, semana-19-sabado)
   const mSemana = filename.match(/^semana-(\d+)-(\w+)$/);
   if (mSemana) {
     const semana = parseInt(mSemana[1], 10);
     const dia = ordemDia[mSemana[2]] ?? 0;
     return semana * 10 + dia;
+  }
+
+  // Padrão: propN-domingo (Tempo Comum — ex: prop05-domingo, prop29-domingo)
+  const mProp = filename.match(/^prop(\d+)-domingo$/);
+  if (mProp) {
+    return parseInt(mProp[1], 10) * 10;
   }
 
   // Padrão: 0N-domingo (ex: 01-domingo, 07-domingo)
@@ -358,8 +367,8 @@ export function sortKeyDia(id: string): number {
     return parseInt(mDomingo[1], 10) * 10;
   }
 
-  // Padrão: 00a-*, 00b-*, 00c-* (festas/próprios antes do domingo 1)
-  // Ex: 00a-natividade-proprio1, 00-quarta-cinzas, 00-vigilia
+  // Padrão: 00[a-z]?-* — festas antes do domingo 1 (vigília, natividade, quarta-cinzas)
+  // Ex: 00-vigilia, 00a-natividade-proprio1, 00b-*, 00c-*
   const mZero = filename.match(/^00([a-z]?)-/);
   if (mZero) {
     const letra = mZero[1]; // '', 'a', 'b', 'c'
@@ -367,7 +376,7 @@ export function sortKeyDia(id: string): number {
     return -30 + offset; // -30, -29, -28, -27
   }
 
-  // Padrão: NNx-sufixo (ex: 06a-palmas, 06b-paixao, 01b-tarde)
+  // Padrão: NNx-sufixo — números com letra (ex: 06a-palmas, 06b-paixao, 01b-tarde)
   const mNum = filename.match(/^(\d+)([a-z]?)-/);
   if (mNum) {
     const n = parseInt(mNum[1], 10);
@@ -376,6 +385,6 @@ export function sortKeyDia(id: string): number {
     return n * 10 + offset;
   }
 
-  // Fallback: ordenação lexicográfica via charCode médio (não deve ocorrer)
-  return filename.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  // Fallback (não deve ocorrer se todos os padrões forem cobertos)
+  return 9000 + filename.charCodeAt(0);
 }
