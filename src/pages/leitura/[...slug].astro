@@ -1,19 +1,51 @@
 ---
 import { getCollection, render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
-import LeiturasTable from '../../components/LeiturasTable.astro';
 import { nomeEstacao, corLiturgica } from '../../lib/liturgicalCalendar';
+import { parseSumarioLinks, type SumarioLink } from '../../lib/sumarioParser';
 
 export async function getStaticPaths() {
   const entries = await getCollection('leituras');
+  const links = parseSumarioLinks();
+  const entryIds = new Set(entries.map((entry) => entry.id));
+  const indexBySlug = new Map(links.map((item, idx) => [item.slug, idx]));
+
+  const findPrevious = (idx: number): SumarioLink | null => {
+    for (let i = idx - 1; i >= 0; i--) {
+      const candidate = links[i];
+      if (entryIds.has(candidate.slug)) {
+        return candidate;
+      }
+    }
+    return null;
+  };
+
+  const findNext = (idx: number): SumarioLink | null => {
+    for (let i = idx + 1; i < links.length; i++) {
+      const candidate = links[i];
+      if (entryIds.has(candidate.slug)) {
+        return candidate;
+      }
+    }
+    return null;
+  };
+
   return entries.map((entry) => ({
     params: { slug: entry.id },
-    props: { entry },
+    props: {
+      entry,
+      prev: indexBySlug.has(entry.id) ? findPrevious(indexBySlug.get(entry.id) ?? -1) : null,
+      next: indexBySlug.has(entry.id) ? findNext(indexBySlug.get(entry.id) ?? -1) : null,
+    },
   }));
 }
 
-const { entry } = Astro.props;
-const { Content, remarkPluginFrontmatter } = await render(entry);
+const { entry, prev, next } = Astro.props as {
+  entry: (Awaited<ReturnType<typeof getCollection>>)[number];
+  prev: SumarioLink | null;
+  next: SumarioLink | null;
+};
+const { Content } = await render(entry);
 
 const { titulo, nome, ano, estacao, tipo } = entry.data;
 const tituloDisplay = titulo ?? nome ?? 'Leitura Litúrgica';
@@ -39,6 +71,24 @@ const base = import.meta.env.BASE_URL;
 ---
 
 <Base title={tituloDisplay}>
+  <nav class="mb-5 text-xs text-gray-500" aria-label="Breadcrumb">
+    <ol class="flex flex-wrap items-center gap-1.5">
+      <li>
+        <a href={base} class="hover:text-gray-300 transition-colors">Lecionário</a>
+      </li>
+      <li class="text-gray-700">/</li>
+      <li>
+        <a href={`${base}/navegar#ano-${String(ano).toLowerCase()}`} class="hover:text-gray-300 transition-colors">
+          Ano {ano}
+        </a>
+      </li>
+      <li class="text-gray-700">/</li>
+      <li>{nomeEstacao(estacao?.toLowerCase() ?? estacao)}</li>
+      <li class="text-gray-700">/</li>
+      <li class="text-gray-300">{tituloDisplay}</li>
+    </ol>
+  </nav>
+
   <!-- Cabeçalho com cor litúrgica -->
   <div class={`rounded-2xl border bg-gradient-to-b p-6 mb-8 ${corHeaderClasses[cor] ?? corHeaderClasses.gray}`}>
     <div class="flex flex-wrap items-center gap-2 mb-3">
@@ -70,12 +120,48 @@ const base = import.meta.env.BASE_URL;
   </div>
 
   <!-- Navegação -->
-  <div class="mt-12 pt-6 border-t border-gray-800">
-    <a
-      href={`${base}/navegar`}
-      class="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-100 transition-colors"
-    >
-      ← Voltar ao índice
-    </a>
+  <div class="mt-12 pt-6 border-t border-gray-800 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex-1 min-w-[220px]">
+      {prev ? (
+        <a
+          href={`${base}/leitura/${prev.slug}`}
+          class="inline-flex max-w-full items-center gap-2 text-sm text-gray-400 hover:text-gray-100 transition-colors"
+        >
+          <span aria-hidden="true">←</span>
+          <span class="truncate">{prev.nome}</span>
+        </a>
+      ) : (
+        <span class="text-sm text-gray-600">Início do lecionário</span>
+      )}
+    </div>
+
+    <div class="flex items-center gap-4">
+      <a
+        href={`${base}/hoje`}
+        class="inline-flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
+      >
+        ✦ Hoje
+      </a>
+      <a
+        href={`${base}/navegar`}
+        class="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-100 transition-colors"
+      >
+        Índice
+      </a>
+    </div>
+
+    <div class="flex-1 min-w-[220px] text-right">
+      {next ? (
+        <a
+          href={`${base}/leitura/${next.slug}`}
+          class="inline-flex max-w-full items-center gap-2 text-sm text-gray-400 hover:text-gray-100 transition-colors"
+        >
+          <span class="truncate">{next.nome}</span>
+          <span aria-hidden="true">→</span>
+        </a>
+      ) : (
+        <span class="text-sm text-gray-600">Fim do lecionário</span>
+      )}
+    </div>
   </div>
 </Base>

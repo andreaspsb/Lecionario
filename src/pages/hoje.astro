@@ -1,0 +1,40 @@
+---
+import Base from '../layouts/Base.astro';
+import { getDiaLiturgico, previousOrSameSunday } from '../lib/liturgicalCalendar';
+
+const base = import.meta.env.BASE_URL;
+const baseNormalized = base.endsWith('/') ? base.slice(0, -1) : base;
+
+const withBase = (relativePath: string) => {
+  const normalizedPath = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
+  return `${baseNormalized}${normalizedPath}`;
+};
+
+const hoje = new Date();
+const diaHoje = getDiaLiturgico(hoje);
+const domingoRecente = previousOrSameSunday(hoje);
+const diaDomingo = getDiaLiturgico(domingoRecente);
+const diaAtual = diaHoje ?? diaDomingo;
+
+const slug = diaAtual?.arquivo.replace(/\.md$/, '');
+const destino = slug ? withBase(`/leitura/${slug}`) : withBase('/');
+---
+
+<Base title="Redirecionando para hoje">
+  <meta http-equiv="refresh" content={`0;url=${destino}`} />
+
+  <section class="rounded-xl border border-gray-800 bg-gray-900/40 p-6 text-center">
+    <h1 class="text-xl font-semibold text-white mb-2">Redirecionando para a leitura de hoje...</h1>
+    <p class="text-sm text-gray-400 mb-4">Se nada acontecer, use o link abaixo.</p>
+    <a
+      href={destino}
+      class="inline-flex items-center gap-2 rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800/60 hover:text-white transition-colors"
+    >
+      Ir agora
+    </a>
+  </section>
+
+  <script define:vars={{ destino }}>
+    window.location.replace(destino);
+  </script>
+</Base>
