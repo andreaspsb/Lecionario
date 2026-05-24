@@ -3,13 +3,15 @@ import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import { nomeEstacao, corLiturgica } from '../lib/liturgicalCalendar';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Carrega TODOS os arquivos .md via content collection (domingos, festas e feriais)
 const entries = await getCollection('leituras');
 
 // Constrói mapa de ordenação a partir do sumario.md (fonte da verdade da ordem litúrgica)
-const sumarioPath = join(process.cwd(), 'sumario.md');
+// Usa import.meta.url para localizar o arquivo de forma confiável em qualquer ambiente (local e CI)
+const sumarioPath = join(dirname(fileURLToPath(import.meta.url)), '../../sumario.md');
 const sumarioText = readFileSync(sumarioPath, 'utf-8');
 const ordemSumario = new Map<string, number>();
 let ordemIdx = 0;
