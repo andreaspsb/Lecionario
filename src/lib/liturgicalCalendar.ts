@@ -54,13 +54,15 @@ export function getAnoLiturgico(date: Date): AnoLiturgico {
   const year = date.getFullYear();
   const inicioAdvento = calcularInicioAdvento(year);
 
-  // Se a data já está no advento deste ano civil, o ano litúrgico é year+1
-  const anoBase = date >= inicioAdvento ? year + 1 : year;
+  // Se a data já está no advento deste ano civil, usa o ano atual (advento recomeça o ciclo);
+  // caso contrário, pertence ao ano litúrgico que começou no advento do ano anterior.
+  const anoBase = date >= inicioAdvento ? year : year - 1;
 
+  // Mapeamento verificado: 2022→A, 2023→B, 2024→C, 2025→A, 2026→B
   const resto = anoBase % 3;
-  if (resto === 0) return 'B';
-  if (resto === 1) return 'C';
-  return 'A';
+  if (resto === 0) return 'A';
+  if (resto === 1) return 'B';
+  return 'C';
 }
 
 /** Retorna true se duas datas são o mesmo dia (ignora horário) */
@@ -197,12 +199,12 @@ export function getDiaLiturgico(date: Date): DiaLiturgico | null {
 
   // Pentecostes
   if (mesmoDia(date, pentecostes)) {
-    return { ano, estacao: 'pascoa', arquivo: `${anoDir}/pascoa/08-pentecostes.md`, nome: 'Pentecostes' };
+    return { ano, estacao: 'pascoa', arquivo: `${anoDir}/pascoa/pentecostes.md`, nome: 'Pentecostes' };
   }
 
   // Trindade
   if (mesmoDia(date, trindade)) {
-    return { ano, estacao: 'tempo-comum', arquivo: `${anoDir}/tempo-comum/00-trindade.md`, nome: 'Domingo da Santíssima Trindade' };
+    return { ano, estacao: 'tempo-comum', arquivo: `${anoDir}/tempo-comum/trindade.md`, nome: 'Domingo da Santíssima Trindade' };
   }
 
   // Domingos do Tempo Comum (Epifania e após Pentecostes)
@@ -233,8 +235,8 @@ export function getDiaLiturgico(date: Date): DiaLiturgico | null {
     const fimAno = calcularInicioAdvento(year);
     while (dom < fimAno) {
       if (mesmoDia(date, dom)) {
-        const num = String(semana + 8).padStart(2, '0'); // tempo comum conta a partir de ~9
-        return { ano, estacao: 'tempo-comum', arquivo: `${anoDir}/tempo-comum/${num}-domingo.md`, nome: `${semana + 8}º Domingo do Tempo Comum` };
+        const num = String(semana + 3).padStart(2, '0'); // Próprio 5 = 1ª semana após Trindade
+        return { ano, estacao: 'tempo-comum', arquivo: `${anoDir}/tempo-comum/prop${num}-domingo.md`, nome: `Próprio ${semana + 3} — ${semana + 1}º Domingo após Pentecostes` };
       }
       semana++;
       dom.setDate(dom.getDate() + 7);
