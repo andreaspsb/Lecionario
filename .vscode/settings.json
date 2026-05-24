@@ -1,5 +1,6 @@
 {
     "chat.tools.terminal.autoApprove": {
-        "npm run format-reflexao": true
+        "npm run format-reflexao": true,
+        "npx astro": true
     }
 }

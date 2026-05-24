@@ -1,23 +1,18 @@
 ---
 import Base from '../layouts/Base.astro';
-import { nomeEstacao, corLiturgica } from '../lib/liturgicalCalendar';
+import { getCollection } from 'astro:content';
+import { nomeEstacao, corLiturgica, sortKeyDia } from '../lib/liturgicalCalendar';
 
-// Importamos os dados estruturais dos scripts
-// Astro resolve .ts diretamente, sem precisar de .js
-import { anoA } from '../../scripts/src/data/year-a';
-import { anoB } from '../../scripts/src/data/year-b';
-import { anoC } from '../../scripts/src/data/year-c';
+// Carrega TODOS os arquivos .md via content collection (domingos, festas e feriais)
+const entries = await getCollection('leituras');
 
-const anos = [anoA, anoB, anoC];
+const ordemEstacoes = ['advento', 'natal', 'epifania', 'quaresma', 'semana-santa', 'pascoa', 'tempo-comum'];
 
 const tipoBadge: Record<string, string> = {
-  domingo: '◉',
-  festa: '✦',
-  'dia-festo': '✦',
-  ferial: '·',
+  'Domingo': '◉',
+  'Dia Festo': '✦',
+  'Ferial': '·',
 };
-
-const base = import.meta.env.BASE_URL;
 
 const corBadgeClasses: Record<string, string> = {
   purple: 'text-purple-400',
@@ -26,35 +21,72 @@ const corBadgeClasses: Record<string, string> = {
   green: 'text-green-400',
   gray: 'text-gray-400',
 };
+
+// Agrupa por (ano, estacao)
+type GrupoEntries = typeof entries;
+type Grupo = { estacao: string; dias: GrupoEntries };
+
+const anosMap = new Map<string, Grupo[]>();
+
+for (const entry of entries) {
+  const { ano, estacao } = entry.data;
+  if (!ano || !estacao) continue;
+  const estKey = estacao.toLowerCase();
+  if (!anosMap.has(ano)) anosMap.set(ano, []);
+  const grupos = anosMap.get(ano)!;
+  let grupo = grupos.find((g) => g.estacao === estKey);
+  if (!grupo) {
+    grupo = { estacao: estKey, dias: [] };
+    grupos.push(grupo);
+  }
+  grupo.dias.push(entry);
+}
+
+// Ordena: anos A, B, C; estações pela ordem litúrgica; dias por nome do arquivo
+const ordemAnos = ['A', 'B', 'C'];
+for (const [ano, grupos] of anosMap) {
+  grupos.sort((a, b) => ordemEstacoes.indexOf(a.estacao) - ordemEstacoes.indexOf(b.estacao));
+  for (const grupo of grupos) {
+    grupo.dias.sort((a, b) => sortKeyDia(a.id) - sortKeyDia(b.id));
+  }
+}
+const anosOrdenados = [...anosMap.entries()].sort(
+  (a, b) => ordemAnos.indexOf(a[0]) - ordemAnos.indexOf(b[0])
+);
+
+const base = import.meta.env.BASE_URL;
 ---
 
 <Base title="Navegar — Lecionário">
   <section class="mb-10">
     <h1 class="text-2xl font-bold text-white mb-2">Índice Completo</h1>
-    <p class="text-gray-400 text-sm">Todas as leituras organizadas por Ano Litúrgico e Estação</p>
+    <p class="text-gray-400 text-sm">
+      Todas as leituras organizadas por Ano Litúrgico e Estação — domingos, festas e leituras diárias
+    </p>
   </section>
 
-  {anos.map((dadosAno) => (
-    <section id={`ano-${dadosAno.ano.toLowerCase()}`} class="mb-14">
+  {anosOrdenados.map(([ano, grupos]) => (
+    <section id={`ano-${ano.toLowerCase()}`} class="mb-14">
       <div class="flex items-center gap-3 mb-6">
-        <h2 class="text-xl font-bold text-white">Ano {dadosAno.ano}</h2>
+        <h2 class="text-xl font-bold text-white">Ano {ano}</h2>
         <span class="text-sm text-gray-500">
-          {dadosAno.ano === 'A' ? 'Evangelho de Mateus' : dadosAno.ano === 'B' ? 'Evangelho de Marcos' : 'Evangelho de Lucas'}
+          {ano === 'A' ? 'Evangelho de Mateus' : ano === 'B' ? 'Evangelho de Marcos' : 'Evangelho de Lucas'}
         </span>
       </div>
 
-      {dadosAno.estacoes.map((estacao) => {
-        const cor = corLiturgica(estacao.id);
+      {grupos.map((grupo) => {
+        const cor = corLiturgica(grupo.estacao);
         const borderColor = corBadgeClasses[cor] ?? corBadgeClasses.gray;
         return (
           <div class="mb-8">
             <h3 class={`text-sm font-semibold uppercase tracking-widest mb-3 ${borderColor}`}>
-              {nomeEstacao(estacao.id)}
+              {nomeEstacao(grupo.estacao)}
             </h3>
             <ul class="space-y-1">
-              {estacao.dias.map((dia) => {
-                const slug = dia.arquivo.replace(/\.md$/, '');
-                const icone = tipoBadge[dia.tipo] ?? '·';
+              {grupo.dias.map((entry) => {
+                const slug = entry.id;
+                const nome = entry.data.titulo ?? entry.data.nome ?? 'Leitura';
+                const icone = tipoBadge[entry.data.tipo] ?? '·';
                 return (
                   <li>
                     <a
@@ -63,7 +95,7 @@ const corBadgeClasses: Record<string, string> = {
                     >
                       <span class={`text-xs w-4 shrink-0 ${borderColor} opacity-60`}>{icone}</span>
                       <span class="text-sm text-gray-300 group-hover:text-white transition-colors">
-                        {dia.nome}
+                        {nome}
                       </span>
                     </a>
                   </li>

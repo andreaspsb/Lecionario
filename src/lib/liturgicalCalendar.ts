@@ -298,3 +298,84 @@ export function corLiturgica(estacao: string): string {
   };
   return cores[estacao] ?? 'gray';
 }
+
+/**
+ * Chave de ordenação para dias litúrgicos dentro de uma estação.
+ *
+ * Convenções de filename (o `id` do entry sem estação):
+ *  - `0N-domingo`        → domingos (N=1..9)
+ *  - `00a-*`, `00b-*`   → festas antes do 1º domingo (natividade, quarta-cinzas, vigília)
+ *  - `semana-N-dia`      → feriais (N=semana, dia=segunda..sábado)
+ *  - Nomes festos        → mapa explícito
+ *
+ * Unidade base: cada "semana" ocupa 10 pontos (0..9 dentro da semana).
+ * Domingos ficam no ponto 0 de cada bloco de 10.
+ * Feriais ficam em 1..6 (seg=1 … sáb=6).
+ */
+export function sortKeyDia(id: string): number {
+  // Extrai apenas o último segmento (filename) do id — ex: "ano-a/advento/01-domingo" → "01-domingo"
+  const filename = id.split('/').pop() ?? id;
+
+  // Mapa explícito para dias festos nomeados
+  const festosMap: Record<string, number> = {
+    // Natal
+    'nome-de-jesus': 15,
+    'ano-novo': 16,
+    // Epifania
+    'apresentacao': 45,
+    'transfiguracao': 80,
+    // Quaresma
+    'anunciacao': 55,
+    // Páscoa
+    'ascensao': 65,
+    'pentecostes': 79,
+    // Tempo Comum
+    'trindade': 4,
+  };
+  if (filename in festosMap) return festosMap[filename];
+
+  // Ordem dos dias da semana (segunda=1 … sábado=6)
+  const ordemDia: Record<string, number> = {
+    segunda: 1,
+    terca: 2,
+    quarta: 3,
+    quinta: 4,
+    sexta: 5,
+    sabado: 6,
+  };
+
+  // Padrão: semana-N-dia (ex: semana-2-quarta)
+  const mSemana = filename.match(/^semana-(\d+)-(\w+)$/);
+  if (mSemana) {
+    const semana = parseInt(mSemana[1], 10);
+    const dia = ordemDia[mSemana[2]] ?? 0;
+    return semana * 10 + dia;
+  }
+
+  // Padrão: 0N-domingo (ex: 01-domingo, 07-domingo)
+  const mDomingo = filename.match(/^0(\d)-domingo$/);
+  if (mDomingo) {
+    return parseInt(mDomingo[1], 10) * 10;
+  }
+
+  // Padrão: 00a-*, 00b-*, 00c-* (festas/próprios antes do domingo 1)
+  // Ex: 00a-natividade-proprio1, 00-quarta-cinzas, 00-vigilia
+  const mZero = filename.match(/^00([a-z]?)-/);
+  if (mZero) {
+    const letra = mZero[1]; // '', 'a', 'b', 'c'
+    const offset = letra ? letra.charCodeAt(0) - 'a'.charCodeAt(0) : 0;
+    return -30 + offset; // -30, -29, -28, -27
+  }
+
+  // Padrão: NNx-sufixo (ex: 06a-palmas, 06b-paixao, 01b-tarde)
+  const mNum = filename.match(/^(\d+)([a-z]?)-/);
+  if (mNum) {
+    const n = parseInt(mNum[1], 10);
+    const letra = mNum[2] || '';
+    const offset = letra ? letra.charCodeAt(0) - 'a'.charCodeAt(0) : 0;
+    return n * 10 + offset;
+  }
+
+  // Fallback: ordenação lexicográfica via charCode médio (não deve ocorrer)
+  return filename.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+}
