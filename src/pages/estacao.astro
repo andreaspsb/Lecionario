@@ -1,0 +1,137 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { corLiturgica, formatarData, nomeEstacao } from '../lib/liturgicalCalendar';
+import { getReadingForDate } from '../lib/dateNavigation';
+import { parseSumarioLinks } from '../lib/sumarioParser';
+import { buildSeasonOverview, getCurrentSeasonKey, type SeasonEntry } from '../lib/currentSeason';
+
+const hoje = new Date();
+const leituraAtual = getReadingForDate(hoje);
+const seasonKey = getCurrentSeasonKey(hoje);
+const entries = await getCollection('leituras');
+const order = parseSumarioLinks().map((link) => link.slug);
+const base = import.meta.env.BASE_URL;
+
+const items: SeasonEntry[] = entries.map((entry) => ({
+  slug: entry.id,
+  title: entry.data.titulo ?? entry.data.nome ?? 'Leitura',
+  ano: entry.data.ano,
+  estacao: entry.data.estacao,
+  tipo: entry.data.tipo,
+}));
+
+const overview = leituraAtual && seasonKey
+  ? buildSeasonOverview(items, {
+      currentSlug: leituraAtual.slug,
+      seasonKey,
+      ano: leituraAtual.dia.ano,
+      order,
+      recentCount: 6,
+      upcomingCount: 12,
+      sundayCount: 5,
+    })
+  : null;
+
+const cor = seasonKey ? corLiturgica(seasonKey) : 'gray';
+const colorClasses: Record<string, string> = {
+  purple: 'border-purple-800 bg-purple-950/20 text-purple-300',
+  white: 'border-blue-800 bg-blue-950/20 text-blue-300',
+  red: 'border-red-800 bg-red-950/20 text-red-300',
+  green: 'border-green-800 bg-green-950/20 text-green-300',
+  gray: 'border-gray-800 bg-gray-900/40 text-gray-300',
+};
+
+function tipoLabel(tipo: string): string {
+  if (tipo === 'Ferial') return 'Leitura diária';
+  if (tipo === 'Dia Festo') return 'Festa';
+  return tipo;
+}
+---
+
+<Base title="Estação atual" description="Sequência da estação litúrgica atual">
+  <section class={`mb-8 rounded-2xl border p-6 ${colorClasses[cor] ?? colorClasses.gray}`}>
+    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.2em] opacity-80">Estação atual</p>
+    <h1 class="text-3xl font-bold text-gray-100">
+      {seasonKey ? nomeEstacao(seasonKey) : 'Estação não identificada'}
+    </h1>
+    <p class="mt-2 text-sm text-gray-400">
+      Sequência litúrgica de {formatarData(hoje)}
+    </p>
+  </section>
+
+  {overview && overview.current ? (
+    <>
+      <section class="mb-10">
+        <div class="mb-3 flex items-center justify-between gap-4">
+          <h2 class="text-lg font-semibold text-gray-100">Leitura de referência</h2>
+          <span class="text-xs text-gray-500">Ano {overview.ano}</span>
+        </div>
+        <a
+          href={`${base}/leitura/${overview.current.slug}`}
+          class="block rounded-xl border border-gray-800 bg-gray-900/50 p-5 hover:bg-gray-800/60 transition-colors"
+        >
+          <p class="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500">
+            {tipoLabel(overview.current.tipo)}
+          </p>
+          <h3 class="text-lg font-semibold text-gray-100">{overview.current.title}</h3>
+        </a>
+      </section>
+
+      <section class="mb-10 grid gap-6 lg:grid-cols-[1fr_1fr]">
+        <div>
+          <h2 class="mb-3 text-lg font-semibold text-gray-100">Dias recentes</h2>
+          <div class="divide-y divide-gray-800 rounded-xl border border-gray-800 bg-gray-900/30">
+            {overview.recent.length > 0 ? overview.recent.map((entry) => (
+              <a href={`${base}/leitura/${entry.slug}`} class="block px-4 py-3 hover:bg-gray-800/50 transition-colors">
+                <p class="text-xs text-gray-500">{tipoLabel(entry.tipo)}</p>
+                <p class="text-sm text-gray-200">{entry.title}</p>
+              </a>
+            )) : (
+              <p class="px-4 py-3 text-sm text-gray-500">Ainda não há dias anteriores nesta estação.</p>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <h2 class="mb-3 text-lg font-semibold text-gray-100">Próximos dias</h2>
+          <div class="divide-y divide-gray-800 rounded-xl border border-gray-800 bg-gray-900/30">
+            {overview.upcoming.length > 0 ? overview.upcoming.map((entry) => (
+              <a href={`${base}/leitura/${entry.slug}`} class="block px-4 py-3 hover:bg-gray-800/50 transition-colors">
+                <p class="text-xs text-gray-500">{tipoLabel(entry.tipo)}</p>
+                <p class="text-sm text-gray-200">{entry.title}</p>
+              </a>
+            )) : (
+              <p class="px-4 py-3 text-sm text-gray-500">Esta estação está chegando ao fim.</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="mb-3 flex items-center justify-between gap-4">
+          <h2 class="text-lg font-semibold text-gray-100">Próximos domingos e festas</h2>
+          <a href={`${base}/navegar?ano=${overview.ano}&estacao=${overview.seasonKey}&tipo=dominical-festivo#ano-${overview.ano.toLowerCase()}`} class="text-sm text-blue-400 hover:underline">
+            Ver filtrado
+          </a>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2">
+          {overview.upcomingSundays.length > 0 ? overview.upcomingSundays.map((entry) => (
+            <a href={`${base}/leitura/${entry.slug}`} class="rounded-xl border border-gray-800 bg-gray-900/40 p-4 hover:bg-gray-800/60 transition-colors">
+              <p class="mb-2 text-xs text-gray-500">{tipoLabel(entry.tipo)}</p>
+              <p class="text-sm font-medium text-gray-100">{entry.title}</p>
+            </a>
+          )) : (
+            <p class="rounded-xl border border-gray-800 bg-gray-900/30 p-4 text-sm text-gray-500">
+              Não há próximos domingos ou festas nesta estação.
+            </p>
+          )}
+        </div>
+      </section>
+    </>
+  ) : (
+    <section class="rounded-xl border border-gray-800 bg-gray-900/40 p-6 text-gray-400">
+      Não foi possível identificar a estação litúrgica atual.
+    </section>
+  )}
+</Base>

@@ -10,8 +10,12 @@ Site estático com as leituras do **Lecionário Comum Revisado** (*Revised Commo
 - **Próximos 7 dias** — atalhos na home para leituras próximas por data
 - **Hoje** — redireciona para a leitura calculada para a data atual
 - **Data** — seletor de data para localizar a leitura correspondente
-- **Navegar** — índice completo por ano e estação, com badges de cores litúrgicas
+- **Calendário** — visualização mensal com a leitura resolvida para cada dia
+- **Estação atual** — sequência da estação litúrgica com recentes, próximos dias e próximos domingos/festas
+- **Navegar** — índice completo por ano e estação, com filtros por ano, estação e tipo
 - **Buscar** — busca full-text em todos os 1097 arquivos de leituras (Pagefind)
+- **Exportar leitura** — copiar texto, baixar Markdown/HTML e compartilhar link resumido nas páginas de leitura
+- **Devocionais** — relatório interno em `/devocionais` com status das reflexões por ano e estação
 - **Tema dark** com cores litúrgicas por estação (roxo, branco, vermelho, verde)
 - **Deploy automático** para GitHub Pages via GitHub Actions
 
@@ -47,12 +51,20 @@ src/                     # Interface web (Astro + Tailwind)
     index.astro          # Home — dia litúrgico atual
     hoje.astro           # Redirecionamento para a leitura de hoje
     data.astro           # Consulta por data
-    navegar.astro        # Índice por ano/estação
+    calendario.astro     # Calendário mensal de leituras
+    devocionais.astro    # Relatório interno de reflexões/devocionais
+    estacao.astro        # Sequência da estação litúrgica atual
+    navegar.astro        # Índice por ano/estação com filtros
     buscar.astro         # Busca full-text (Pagefind)
     leitura/[...slug]    # Página individual de leitura
   lib/
     liturgicalCalendar.ts  # Cálculo de Páscoa, ano litúrgico, dia atual
     dateNavigation.ts      # Consulta por data e próximos dias
+    calendarMonth.ts       # Montagem de calendário mensal
+    currentSeason.ts       # Recorte da estação litúrgica atual
+    devotionalStatus.ts    # Status editorial das seções ## Reflexão
+    navigationFilters.ts   # Normalização e filtros do índice
+    readingExport.ts       # Exportação de leitura em Markdown/HTML e texto compartilhável
     sumarioParser.ts       # Parse do sumario.md para navegação anterior/próximo
 scripts/                 # Gerador de conteúdo (Node + TypeScript)
   src/
@@ -102,9 +114,9 @@ npm.cmd run validate
 
 `npm.cmd run validate` executa testes e typecheck da raiz, testes e typecheck de `scripts/`, build Astro e indexação Pagefind.
 
-`npm.cmd test` na raiz valida regras de calendário litúrgico, navegação por data, parsing do `sumario.md` e integridade dos 1097 arquivos de leitura. O teste em `scripts/` valida a proteção contra sobrescrita de devocionais preenchidos.
+`npm.cmd test` na raiz valida regras de calendário litúrgico, navegação por data, calendário mensal, estação atual, status de devocionais, exportação de leituras, filtros do índice, parsing do `sumario.md` e integridade dos 1097 arquivos de leitura. O teste em `scripts/` valida a proteção contra sobrescrita de devocionais preenchidos.
 
-O build gera o site estático em `dist/` e indexa as páginas com Pagefind. Em 2026-06-30, a validação local gerou 1102 páginas HTML e indexou 1097 páginas de leituras.
+O build gera o site estático em `dist/` e indexa as páginas com Pagefind. Em 2026-06-30, a validação local gerou 1104 páginas HTML e indexou 1097 páginas de leituras.
 
 ## Fonte
 

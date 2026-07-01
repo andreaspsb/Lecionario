@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import { nomeEstacao, corLiturgica } from '../lib/liturgicalCalendar';
 import { parseSumarioLinks } from '../lib/sumarioParser';
+import { normalizeSeasonKey } from '../lib/navigationFilters';
 
 // Carrega TODOS os arquivos .md via content collection (domingos, festas e feriais)
 const entries = await getCollection('leituras');
@@ -38,12 +39,7 @@ const anosMap = new Map<string, Grupo[]>();
 for (const entry of entries) {
   const { ano, estacao } = entry.data;
   if (!ano || !estacao) continue;
-  // Normaliza variantes de estação para a chave canônica (ex: "Tempo Comum (Após Pentecostes)" → "tempo-comum")
-  const estKey = estacao.toLowerCase()
-    .replace(/\s*\(.*\)$/, '')  // remove sufixo entre parênteses
-    .trim()
-    .replace(/\s+/g, '-')       // espaços → hífens
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // remove acentos
+  const estKey = normalizeSeasonKey(estacao);
   if (!anosMap.has(ano)) anosMap.set(ano, []);
   const grupos = anosMap.get(ano)!;
   let grupo = grupos.find((g) => g.estacao === estKey);
@@ -81,8 +77,50 @@ const base = import.meta.env.BASE_URL;
     </p>
   </section>
 
+  <section data-pagefind-ignore class="mb-10 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
+    <div class="grid gap-4 md:grid-cols-3">
+      <label class="block">
+        <span class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">Ano</span>
+        <select data-filter="ano" class="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none">
+          <option value="all">Todos</option>
+          <option value="A">Ano A</option>
+          <option value="B">Ano B</option>
+          <option value="C">Ano C</option>
+        </select>
+      </label>
+
+      <label class="block">
+        <span class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">Estação</span>
+        <select data-filter="estacao" class="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none">
+          <option value="all">Todas</option>
+          {ordemEstacoes.map((estacao) => (
+            <option value={estacao}>{nomeEstacao(estacao)}</option>
+          ))}
+        </select>
+      </label>
+
+      <label class="block">
+        <span class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">Tipo</span>
+        <select data-filter="tipo" class="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none">
+          <option value="all">Todos</option>
+          <option value="dominical-festivo">Domingos e festas</option>
+          <option value="ferial">Leituras diárias</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <p class="text-sm text-gray-400">
+        <span data-filter-count>{entries.length}</span> leituras exibidas
+      </p>
+      <button type="button" data-filter-reset class="text-sm text-blue-400 hover:underline">
+        Limpar filtros
+      </button>
+    </div>
+  </section>
+
   {anosOrdenados.map(([ano, grupos]) => (
-    <section id={`ano-${ano.toLowerCase()}`} class="mb-14">
+    <section id={`ano-${ano.toLowerCase()}`} data-year-section data-ano={ano} class="mb-14">
       <div class="flex items-center gap-3 mb-6">
         <h2 class="text-xl font-bold text-white">Ano {ano}</h2>
         <span class="text-sm text-gray-500">
@@ -94,7 +132,7 @@ const base = import.meta.env.BASE_URL;
         const cor = corLiturgica(grupo.estacao);
         const borderColor = corBadgeClasses[cor] ?? corBadgeClasses.gray;
         return (
-          <div class="mb-8">
+          <div class="mb-8" data-season-group data-ano={ano} data-estacao={grupo.estacao}>
             <h3 class={`text-sm font-semibold uppercase tracking-widest mb-3 ${borderColor}`}>
               {nomeEstacao(grupo.estacao)}
             </h3>
@@ -107,6 +145,10 @@ const base = import.meta.env.BASE_URL;
                   <li>
                     <a
                       href={`${base}/leitura/${slug}`}
+                      data-nav-item
+                      data-ano={entry.data.ano}
+                      data-estacao={normalizeSeasonKey(entry.data.estacao)}
+                      data-tipo={entry.data.tipo === 'Ferial' ? 'ferial' : 'dominical-festivo'}
                       class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800/60 transition-colors group"
                     >
                       <span class={`text-xs w-4 shrink-0 ${borderColor} opacity-60`}>{icone}</span>
@@ -124,3 +166,91 @@ const base = import.meta.env.BASE_URL;
     </section>
   ))}
 </Base>
+
+<script>
+  const controls = {
+    ano: document.querySelector('[data-filter="ano"]'),
+    estacao: document.querySelector('[data-filter="estacao"]'),
+    tipo: document.querySelector('[data-filter="tipo"]'),
+  };
+  const items = Array.from(document.querySelectorAll('[data-nav-item]'));
+  const groups = Array.from(document.querySelectorAll('[data-season-group]'));
+  const yearSections = Array.from(document.querySelectorAll('[data-year-section]'));
+  const count = document.querySelector('[data-filter-count]');
+  const reset = document.querySelector('[data-filter-reset]');
+
+  const getValue = (key) => {
+    const control = controls[key];
+    return control instanceof HTMLSelectElement ? control.value : 'all';
+  };
+
+  const updateUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    for (const key of Object.keys(controls)) {
+      const value = getValue(key);
+      if (value === 'all') {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    }
+    const query = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+  };
+
+  const applyFilters = () => {
+    const ano = getValue('ano');
+    const estacao = getValue('estacao');
+    const tipo = getValue('tipo');
+    let visibleCount = 0;
+
+    for (const item of items) {
+      const visible = (ano === 'all' || item.dataset.ano === ano)
+        && (estacao === 'all' || item.dataset.estacao === estacao)
+        && (tipo === 'all' || item.dataset.tipo === tipo);
+      item.parentElement?.classList.toggle('hidden', !visible);
+      if (visible) visibleCount++;
+    }
+
+    for (const group of groups) {
+      const hasVisibleItem = Boolean(group.querySelector('li:not(.hidden)'));
+      group.classList.toggle('hidden', !hasVisibleItem);
+    }
+
+    for (const section of yearSections) {
+      const hasVisibleGroup = Boolean(section.querySelector('[data-season-group]:not(.hidden)'));
+      section.classList.toggle('hidden', !hasVisibleGroup);
+    }
+
+    if (count) {
+      count.textContent = String(visibleCount);
+    }
+
+    updateUrl();
+  };
+
+  const restoreFromUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    for (const [key, control] of Object.entries(controls)) {
+      if (control instanceof HTMLSelectElement) {
+        control.value = params.get(key) ?? 'all';
+      }
+    }
+  };
+
+  for (const control of Object.values(controls)) {
+    control?.addEventListener('change', applyFilters);
+  }
+
+  reset?.addEventListener('click', () => {
+    for (const control of Object.values(controls)) {
+      if (control instanceof HTMLSelectElement) {
+        control.value = 'all';
+      }
+    }
+    applyFilters();
+  });
+
+  restoreFromUrl();
+  applyFilters();
+</script>

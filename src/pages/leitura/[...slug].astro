@@ -1,8 +1,11 @@
 ---
 import { getCollection, render } from 'astro:content';
+import fs from 'node:fs';
+import path from 'node:path';
 import Base from '../../layouts/Base.astro';
 import { nomeEstacao, corLiturgica } from '../../lib/liturgicalCalendar';
 import { parseSumarioLinks, type SumarioLink } from '../../lib/sumarioParser';
+import { buildReadingExport } from '../../lib/readingExport';
 
 export async function getStaticPaths() {
   const entries = await getCollection('leituras');
@@ -50,6 +53,22 @@ const { Content } = await render(entry);
 const { titulo, nome, ano, estacao, tipo } = entry.data;
 const tituloDisplay = titulo ?? nome ?? 'Leitura Litúrgica';
 const cor = corLiturgica(estacao?.toLowerCase() ?? '');
+const projectRoot = process.env.INIT_CWD
+  ?? (path.basename(process.cwd()) === 'dist' ? path.dirname(process.cwd()) : process.cwd());
+const sourceMarkdown = fs.readFileSync(path.resolve(projectRoot, `${entry.id}.md`), 'utf-8');
+const base = import.meta.env.BASE_URL;
+const basePath = base.replace(/\/$/, '');
+const readingUrl = new URL(`${basePath}/leitura/${entry.id}`, Astro.site).toString();
+const exportData = buildReadingExport({
+  title: tituloDisplay,
+  ano,
+  estacao,
+  tipo,
+  markdown: sourceMarkdown,
+  url: readingUrl,
+  slug: entry.id,
+});
+const exportJson = JSON.stringify(exportData).replace(/</g, '\\u003c');
 
 const corHeaderClasses: Record<string, string> = {
   purple: 'from-purple-950/50 to-transparent border-purple-800/40',
@@ -67,7 +86,6 @@ const corBadgeClasses: Record<string, string> = {
   gray: 'bg-gray-800 text-gray-300',
 };
 
-const base = import.meta.env.BASE_URL;
 ---
 
 <Base title={tituloDisplay}>
@@ -101,6 +119,49 @@ const base = import.meta.env.BASE_URL;
     </div>
     <h1 data-pagefind-meta="title" class="text-2xl font-bold text-white leading-tight">{tituloDisplay}</h1>
   </div>
+
+  <section data-pagefind-ignore class="mb-8 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        data-export-action="copy-markdown"
+        class="rounded-md border border-gray-700 px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-gray-500 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        Copiar texto
+      </button>
+      <button
+        type="button"
+        data-export-action="download-markdown"
+        class="rounded-md border border-gray-700 px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-gray-500 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        Baixar .md
+      </button>
+      <button
+        type="button"
+        data-export-action="download-html"
+        class="rounded-md border border-gray-700 px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-gray-500 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        Baixar HTML
+      </button>
+      <button
+        type="button"
+        data-export-action="copy-link"
+        class="rounded-md border border-gray-700 px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-gray-500 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        Copiar link
+      </button>
+      <button
+        type="button"
+        data-export-action="share"
+        class="rounded-md border border-blue-800 bg-blue-950/30 px-3 py-2 text-sm font-medium text-blue-200 transition-colors hover:border-blue-600 hover:bg-blue-900/40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        Compartilhar
+      </button>
+    </div>
+    <p data-export-status class="mt-3 min-h-5 text-sm text-gray-500" aria-live="polite"></p>
+  </section>
+
+  <script type="application/json" data-reading-export set:html={exportJson} />
 
   <!-- Conteúdo do arquivo .md renderizado -->
   <div data-pagefind-body class="prose prose-invert prose-sm max-w-none
@@ -165,3 +226,86 @@ const base = import.meta.env.BASE_URL;
     </div>
   </div>
 </Base>
+
+<script>
+  interface ReadingExportPayload {
+    filenameBase: string;
+    markdown: string;
+    html: string;
+    shareText: string;
+  }
+
+  const payloadElement = document.querySelector('[data-reading-export]');
+  const statusElement = document.querySelector('[data-export-status]');
+  const payload = payloadElement?.textContent
+    ? JSON.parse(payloadElement.textContent) as ReadingExportPayload
+    : null;
+
+  const setExportStatus = (message: string) => {
+    if (statusElement) {
+      statusElement.textContent = message;
+    }
+  };
+
+  const copyText = async (text: string) => {
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+  };
+
+  const downloadText = (content: string, filename: string, type: string) => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  document.querySelectorAll('[data-export-action]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!payload || !(button instanceof HTMLElement)) return;
+
+      const action = button.dataset.exportAction;
+      try {
+        if (action === 'copy-markdown') {
+          await copyText(payload.markdown);
+          setExportStatus('Texto da leitura copiado.');
+        } else if (action === 'download-markdown') {
+          downloadText(payload.markdown, `${payload.filenameBase}.md`, 'text/markdown;charset=utf-8');
+          setExportStatus('Arquivo Markdown gerado.');
+        } else if (action === 'download-html') {
+          downloadText(payload.html, `${payload.filenameBase}.html`, 'text/html;charset=utf-8');
+          setExportStatus('Arquivo HTML gerado.');
+        } else if (action === 'copy-link') {
+          await copyText(payload.shareText);
+          setExportStatus('Link e resumo copiados.');
+        } else if (action === 'share') {
+          if (navigator.share) {
+            await navigator.share({ text: payload.shareText });
+            setExportStatus('Compartilhamento aberto.');
+          } else {
+            await copyText(payload.shareText);
+            setExportStatus('Compartilhamento copiado.');
+          }
+        }
+      } catch {
+        setExportStatus('Não foi possível concluir a ação.');
+      }
+    });
+  });
+</script>

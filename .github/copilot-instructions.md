@@ -23,7 +23,7 @@ Memoria/Global/decisoes.md
 - `npm run build` na raiz → `astro build && pagefind --site dist --output-path dist/pagefind`
 - `npm run generate` → 222 arquivos dominicais; `npm run generate-daily` → 875 arquivos diários (usa API HTTP Vanderbilt — lento)
 - Saída de conteúdo: `ano-[a|b|c]/[estacao]/` + `sumario.md` na raiz como índice canônico
-- Rotas principais: `/`, `/hoje`, `/data`, `/navegar`, `/buscar`, `/leitura/[...slug]`
+- Rotas principais: `/`, `/hoje`, `/data`, `/calendario`, `/devocionais`, `/estacao`, `/navegar`, `/buscar`, `/leitura/[...slug]`
 - Estações: `advento`, `natal`, `epifania`, `quaresma`, `semana-santa`, `pascoa`, `tempo-comum`
 - Meta de cobertura: **875 arquivos diários, 0 não linkados** no sumario.md
 
@@ -38,6 +38,11 @@ Memoria/Global/decisoes.md
 - Não criar estrutura `leituras-diarias/` (removida) — arquivos diários ficam em `ano-[a|b|c]/[estacao]/`
 - Manter `sumario.md` como fonte canônica de ordenação; `navegar.astro` e `leitura/[...slug].astro` dependem dele em build time
 - Consulta por data e lista de próximos dias usam `src/lib/dateNavigation.ts`; manter testes em `tests/dateNavigation.test.ts`
+- Calendário mensal usa `src/lib/calendarMonth.ts`; manter testes em `tests/calendarMonth.test.ts`
+- Status de devocionais usa `src/lib/devotionalStatus.ts`; manter testes em `tests/devotionalStatus.test.ts`
+- Estação atual usa `src/lib/currentSeason.ts`; manter testes em `tests/currentSeason.test.ts`
+- Exportação/cópia/compartilhamento de leituras usa `src/lib/readingExport.ts`; manter testes em `tests/readingExport.test.ts`
+- Filtros de `/navegar` usam `src/lib/navigationFilters.ts`; manter testes em `tests/navigationFilters.test.ts`
 - Não sobrescrever devocionais preenchidos: `generate` e `generate-daily` devem preservar arquivos existentes quando o placeholder `<!-- Texto devocional aqui -->` já foi substituído
 - Rodar `npm.cmd test` na raiz após mudanças em calendário, `sumario.md`, navegação ou conteúdo; rodar `npm.cmd test` em `scripts/` após mudanças nos geradores
 - Atualizar `Memoria/Projetos/Lecionario.md` via MCP quando houver mudanças relevantes na arquitetura

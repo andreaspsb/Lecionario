@@ -5,19 +5,21 @@ const pathname = Astro.url.pathname;
 const links = [
   { href: `${base}/hoje`, label: 'Hoje' },
   { href: `${base}/data`, label: 'Data' },
+  { href: `${base}/calendario`, label: 'Calendário' },
+  { href: `${base}/estacao`, label: 'Estação' },
   { href: `${base}/navegar`, label: 'Navegar' },
   { href: `${base}/buscar`, label: 'Buscar' },
 ];
 ---
 
 <nav data-pagefind-ignore class="sticky top-0 z-50 bg-gray-950/95 backdrop-blur border-b border-gray-800">
-  <div class="max-w-4xl mx-auto px-4 flex items-center justify-between h-14">
-    <a href={base} class="font-semibold text-gray-100 hover:text-white transition-colors">
+  <div class="max-w-4xl mx-auto px-4 py-3 flex flex-col items-start gap-3 sm:h-14 sm:py-0 sm:flex-row sm:items-center sm:justify-between">
+    <a href={base} class="font-semibold text-gray-100 hover:text-white transition-colors shrink-0">
       ✦ Lecionário
     </a>
-    <ul class="flex gap-1">
+    <ul class="flex w-full max-w-full gap-1 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
       {links.map(({ href, label }) => (
-        <li>
+        <li class="shrink-0">
           <a
             href={href}
             class={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${

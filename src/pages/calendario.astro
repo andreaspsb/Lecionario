@@ -1,0 +1,201 @@
+---
+import Base from '../layouts/Base.astro';
+
+const base = import.meta.env.BASE_URL;
+const currentYear = new Date().getFullYear();
+---
+
+<Base title="Calendário" description="Calendário mensal de leituras do Lecionário Comum Revisado">
+  <section class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-100 mb-2">Calendário</h1>
+    <p class="text-gray-400 text-sm">Visualize as leituras de um mês inteiro</p>
+  </section>
+
+  <section data-pagefind-ignore class="mb-8 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
+    <form id="calendar-form" class="grid gap-4 sm:grid-cols-[1fr_1fr_auto]">
+      <label class="block">
+        <span class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">Mês</span>
+        <select
+          id="calendar-month"
+          class="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none"
+        >
+          <option value="1">Janeiro</option>
+          <option value="2">Fevereiro</option>
+          <option value="3">Março</option>
+          <option value="4">Abril</option>
+          <option value="5">Maio</option>
+          <option value="6">Junho</option>
+          <option value="7">Julho</option>
+          <option value="8">Agosto</option>
+          <option value="9">Setembro</option>
+          <option value="10">Outubro</option>
+          <option value="11">Novembro</option>
+          <option value="12">Dezembro</option>
+        </select>
+      </label>
+
+      <label class="block">
+        <span class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">Ano</span>
+        <input
+          id="calendar-year"
+          type="number"
+          min="1900"
+          max="2200"
+          value={currentYear}
+          class="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none"
+        />
+      </label>
+
+      <button
+        type="submit"
+        class="self-end rounded-lg border border-blue-700 bg-blue-900/30 px-4 py-2 text-sm font-medium text-blue-200 hover:bg-blue-900/50 transition-colors"
+      >
+        Ver mês
+      </button>
+    </form>
+  </section>
+
+  <section aria-live="polite">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <button type="button" data-calendar-prev class="rounded-lg border border-gray-800 px-3 py-2 text-sm text-gray-300 hover:bg-gray-800/60">
+        Mês anterior
+      </button>
+      <h2 id="calendar-title" class="text-xl font-semibold text-gray-100"></h2>
+      <button type="button" data-calendar-next class="rounded-lg border border-gray-800 px-3 py-2 text-sm text-gray-300 hover:bg-gray-800/60">
+        Próximo mês
+      </button>
+    </div>
+
+    <div class="hidden grid-cols-7 border-y border-gray-800 text-center text-xs font-medium uppercase tracking-wider text-gray-500 sm:grid">
+      <span class="py-2">Dom</span>
+      <span class="py-2">Seg</span>
+      <span class="py-2">Ter</span>
+      <span class="py-2">Qua</span>
+      <span class="py-2">Qui</span>
+      <span class="py-2">Sex</span>
+      <span class="py-2">Sáb</span>
+    </div>
+
+    <div id="calendar-grid" class="grid grid-cols-1 gap-2 border-b border-gray-800 py-3 sm:grid-cols-7 sm:gap-0 sm:py-0"></div>
+  </section>
+</Base>
+
+<script define:vars={{ base }}>
+  import { getCalendarMonth, parseMonthInput } from '../lib/calendarMonth';
+  import { formatarData } from '../lib/liturgicalCalendar';
+
+  const form = document.getElementById('calendar-form');
+  const monthInput = document.getElementById('calendar-month');
+  const yearInput = document.getElementById('calendar-year');
+  const title = document.getElementById('calendar-title');
+  const grid = document.getElementById('calendar-grid');
+  const prev = document.querySelector('[data-calendar-prev]');
+  const next = document.querySelector('[data-calendar-next]');
+
+  const today = new Date();
+  let selectedYear = today.getFullYear();
+  let selectedMonthIndex = today.getMonth();
+
+  const escapeHtml = (value) => value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+
+  const syncInputs = () => {
+    if (monthInput instanceof HTMLSelectElement) {
+      monthInput.value = String(selectedMonthIndex + 1);
+    }
+    if (yearInput instanceof HTMLInputElement) {
+      yearInput.value = String(selectedYear);
+    }
+  };
+
+  const updateUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('ano', String(selectedYear));
+    params.set('mes', String(selectedMonthIndex + 1).padStart(2, '0'));
+    window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+  };
+
+  const renderCalendar = () => {
+    if (!grid || !title) return;
+
+    const month = getCalendarMonth(selectedYear, selectedMonthIndex);
+    title.textContent = month.label;
+    grid.innerHTML = '';
+
+    for (let index = 0; index < month.leadingBlankDays; index++) {
+      const blank = document.createElement('div');
+      blank.className = 'hidden min-h-28 border-r border-gray-900 sm:block';
+      grid.append(blank);
+    }
+
+    for (const day of month.days) {
+      const reading = day.reading;
+      const href = reading ? `${base}/leitura/${reading.slug}` : '#';
+      const label = reading?.label ?? 'Sem leitura';
+      const titleText = reading?.dia.nome ?? 'Sem leitura';
+      const source = reading?.label === 'Domingo mais recente'
+        ? `<p class="mt-1 text-[11px] text-gray-600">Ref. ${formatarData(reading.sourceDate)}</p>`
+        : '';
+      const currentDay = day.isoDate === `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+      const cell = document.createElement('article');
+      cell.className = `min-h-28 border border-gray-800 bg-gray-950/40 p-3 sm:border-l-0 sm:border-t-0 ${currentDay ? 'ring-1 ring-blue-500/60' : ''}`;
+      cell.innerHTML = `
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <time datetime="${day.isoDate}" class="text-sm font-semibold text-gray-100">${day.dayOfMonth}</time>
+          <span class="rounded-full bg-gray-900 px-2 py-0.5 text-[11px] text-gray-500">${escapeHtml(label)}</span>
+        </div>
+        <a href="${href}" class="block text-sm leading-snug text-gray-300 hover:text-white">
+          ${escapeHtml(titleText)}
+        </a>
+        ${source}
+      `;
+      grid.append(cell);
+    }
+
+    syncInputs();
+    updateUrl();
+  };
+
+  const setMonth = (year, monthIndex) => {
+    selectedYear = year;
+    selectedMonthIndex = monthIndex;
+    if (selectedMonthIndex < 0) {
+      selectedMonthIndex = 11;
+      selectedYear--;
+    }
+    if (selectedMonthIndex > 11) {
+      selectedMonthIndex = 0;
+      selectedYear++;
+    }
+    renderCalendar();
+  };
+
+  const restoreFromUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    const parsed = parseMonthInput(params.get('ano'), params.get('mes'));
+    if (parsed) {
+      selectedYear = parsed.year;
+      selectedMonthIndex = parsed.monthIndex;
+    }
+  };
+
+  form?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (monthInput instanceof HTMLSelectElement && yearInput instanceof HTMLInputElement) {
+      const parsed = parseMonthInput(yearInput.value, monthInput.value);
+      if (parsed) {
+        setMonth(parsed.year, parsed.monthIndex);
+      }
+    }
+  });
+
+  prev?.addEventListener('click', () => setMonth(selectedYear, selectedMonthIndex - 1));
+  next?.addEventListener('click', () => setMonth(selectedYear, selectedMonthIndex + 1));
+
+  restoreFromUrl();
+  renderCalendar();
+</script>

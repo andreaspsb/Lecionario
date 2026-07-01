@@ -1,0 +1,169 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { nomeEstacao } from '../lib/liturgicalCalendar';
+import {
+  analyzeDevotionalSource,
+  buildDevotionalReport,
+  type DevotionalFileStatus,
+  type DevotionalStatus,
+} from '../lib/devotionalStatus';
+
+const entries = await getCollection('leituras');
+const projectRoot = process.env.INIT_CWD
+  ?? (path.basename(process.cwd()) === 'dist' ? path.dirname(process.cwd()) : process.cwd());
+const base = import.meta.env.BASE_URL;
+
+const files = entries.map((entry) => {
+  const markdown = fs.readFileSync(path.resolve(projectRoot, `${entry.id}.md`), 'utf-8');
+  return analyzeDevotionalSource({
+    slug: entry.id,
+    title: entry.data.titulo ?? entry.data.nome ?? entry.id,
+    ano: entry.data.ano,
+    estacao: entry.data.estacao,
+    tipo: entry.data.tipo,
+    markdown,
+  });
+});
+
+const report = buildDevotionalReport(files);
+const pendingFiles = report.files
+  .filter((file) => file.status !== 'filled')
+  .sort((a, b) => statusOrder(a.status) - statusOrder(b.status) || a.slug.localeCompare(b.slug));
+const samplePendingFiles = pendingFiles.slice(0, 80);
+
+function statusOrder(status: DevotionalStatus): number {
+  if (status === 'missing-section') return 0;
+  if (status === 'placeholder') return 1;
+  return 2;
+}
+
+function statusLabel(status: DevotionalStatus): string {
+  if (status === 'missing-section') return 'Sem seção';
+  if (status === 'placeholder') return 'Placeholder';
+  return 'Preenchido';
+}
+
+function statusClass(status: DevotionalStatus): string {
+  if (status === 'missing-section') return 'border-red-800 bg-red-950/30 text-red-200';
+  if (status === 'placeholder') return 'border-amber-800 bg-amber-950/30 text-amber-200';
+  return 'border-emerald-800 bg-emerald-950/30 text-emerald-200';
+}
+---
+
+<Base title="Status dos devocionais" description="Relatório editorial de reflexões e devocionais">
+  <section class="mb-8">
+    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Relatório interno</p>
+    <h1 class="text-3xl font-bold text-gray-100">Status dos devocionais</h1>
+    <p class="mt-3 max-w-2xl text-sm leading-relaxed text-gray-400">
+      Acompanhamento das seções <code class="rounded bg-gray-900 px-1.5 py-0.5 text-gray-300">## Reflexão</code>
+      nos arquivos Markdown do lecionário.
+    </p>
+  </section>
+
+  <section class="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-xl border border-gray-800 bg-gray-900/40 p-4">
+      <p class="text-xs uppercase tracking-wider text-gray-500">Total</p>
+      <p class="mt-2 text-3xl font-semibold text-gray-100">{report.total}</p>
+    </div>
+    <div class="rounded-xl border border-emerald-800 bg-emerald-950/20 p-4">
+      <p class="text-xs uppercase tracking-wider text-emerald-300/70">Preenchidos</p>
+      <p class="mt-2 text-3xl font-semibold text-emerald-100">{report.filledCount}</p>
+    </div>
+    <div class="rounded-xl border border-amber-800 bg-amber-950/20 p-4">
+      <p class="text-xs uppercase tracking-wider text-amber-300/70">Com placeholder</p>
+      <p class="mt-2 text-3xl font-semibold text-amber-100">{report.placeholderCount}</p>
+    </div>
+    <div class="rounded-xl border border-red-800 bg-red-950/20 p-4">
+      <p class="text-xs uppercase tracking-wider text-red-300/70">Sem seção</p>
+      <p class="mt-2 text-3xl font-semibold text-red-100">{report.missingSectionCount}</p>
+    </div>
+  </section>
+
+  <section class="mb-10 rounded-xl border border-gray-800 bg-gray-900/40 p-5">
+    <div class="mb-3 flex items-center justify-between gap-4">
+      <h2 class="text-lg font-semibold text-gray-100">Progresso geral</h2>
+      <span class="text-sm font-medium text-gray-300">{report.completionPercent}%</span>
+    </div>
+    <div class="h-3 overflow-hidden rounded-full bg-gray-800">
+      <div class="h-full rounded-full bg-emerald-500" style={`width: ${report.completionPercent}%`}></div>
+    </div>
+  </section>
+
+  <section class="mb-10">
+    <h2 class="mb-4 text-lg font-semibold text-gray-100">Progresso por ano e estação</h2>
+    <div class="overflow-x-auto rounded-xl border border-gray-800">
+      <table class="w-full min-w-[720px] text-sm">
+        <thead class="bg-gray-900/80 text-left text-xs uppercase tracking-wider text-gray-500">
+          <tr>
+            <th class="px-4 py-3">Ano</th>
+            <th class="px-4 py-3">Estação</th>
+            <th class="px-4 py-3 text-right">Total</th>
+            <th class="px-4 py-3 text-right">Preenchidos</th>
+            <th class="px-4 py-3 text-right">Placeholder</th>
+            <th class="px-4 py-3 text-right">Sem seção</th>
+            <th class="px-4 py-3">Progresso</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {report.byGroup.map((group) => (
+            <tr class="bg-gray-950/20">
+              <td class="px-4 py-3 font-medium text-gray-200">Ano {group.ano}</td>
+              <td class="px-4 py-3 text-gray-300">{nomeEstacao(group.estacao.toLowerCase())}</td>
+              <td class="px-4 py-3 text-right text-gray-300">{group.total}</td>
+              <td class="px-4 py-3 text-right text-emerald-300">{group.filledCount}</td>
+              <td class="px-4 py-3 text-right text-amber-300">{group.placeholderCount}</td>
+              <td class="px-4 py-3 text-right text-red-300">{group.missingSectionCount}</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="h-2 w-24 overflow-hidden rounded-full bg-gray-800">
+                    <div class="h-full rounded-full bg-emerald-500" style={`width: ${group.completionPercent}%`}></div>
+                  </div>
+                  <span class="w-10 text-right text-xs text-gray-400">{group.completionPercent}%</span>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-100">Arquivos pendentes</h2>
+        <p class="mt-1 text-sm text-gray-500">
+          {pendingFiles.length} arquivos exigem revisão editorial.
+        </p>
+      </div>
+      {pendingFiles.length > samplePendingFiles.length && (
+        <p class="text-sm text-gray-500">
+          Mostrando os primeiros {samplePendingFiles.length}.
+        </p>
+      )}
+    </div>
+
+    {samplePendingFiles.length > 0 ? (
+      <div class="divide-y divide-gray-800 rounded-xl border border-gray-800 bg-gray-900/30">
+        {samplePendingFiles.map((file: DevotionalFileStatus) => (
+          <a href={`${base}/leitura/${file.slug}`} class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-gray-800/50">
+            <div>
+              <p class="text-sm font-medium text-gray-100">{file.title}</p>
+              <p class="mt-1 text-xs text-gray-500">Ano {file.ano} · {file.estacao} · {file.tipo}</p>
+            </div>
+            <span class={`rounded-full border px-2.5 py-1 text-xs font-medium ${statusClass(file.status)}`}>
+              {statusLabel(file.status)}
+            </span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="rounded-xl border border-emerald-800 bg-emerald-950/20 p-5 text-sm text-emerald-100">
+        Todas as reflexões estão preenchidas.
+      </div>
+    )}
+  </section>
+</Base>

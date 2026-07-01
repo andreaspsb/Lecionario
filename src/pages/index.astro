@@ -1,14 +1,16 @@
 ---
 import Base from '../layouts/Base.astro';
 import DayCard from '../components/DayCard.astro';
-import { formatarData } from '../lib/liturgicalCalendar';
+import { formatarData, nomeEstacao } from '../lib/liturgicalCalendar';
 import { getHomeHighlight } from '../lib/homeHighlight';
 import { getUpcomingReadings } from '../lib/dateNavigation';
+import { getCurrentSeasonKey } from '../lib/currentSeason';
 
 // Calcula o dia litúrgico atual em build time
 const hoje = new Date();
 const destaqueHome = getHomeHighlight(hoje);
 const proximosDias = getUpcomingReadings(hoje, 7);
+const estacaoAtual = getCurrentSeasonKey(hoje);
 const base = import.meta.env.BASE_URL;
 ---
 
@@ -35,6 +37,20 @@ const base = import.meta.env.BASE_URL;
       <a href={`${base}/navegar`} class="text-blue-400 hover:underline mt-2 inline-block">
         Navegar pelo índice →
       </a>
+    </section>
+  )}
+
+  {estacaoAtual && (
+    <section class="mb-12 rounded-xl border border-gray-800 bg-gray-900/40 p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Estação litúrgica</p>
+          <h2 class="mt-1 text-lg font-semibold text-gray-100">{nomeEstacao(estacaoAtual)}</h2>
+        </div>
+        <a href={`${base}/estacao`} class="text-sm text-blue-400 hover:underline">
+          Ver sequência da estação
+        </a>
+      </div>
     </section>
   )}
 
