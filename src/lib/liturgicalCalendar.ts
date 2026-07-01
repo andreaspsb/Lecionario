@@ -174,10 +174,10 @@ export function getDiaLiturgico(date: Date): DiaLiturgico | null {
 
   // Quinta e Sexta Santas
   if (mesmoDia(date, quintaSanta)) {
-    return { ano, estacao: 'semana-santa', arquivo: `${anoDir}/semana-santa/quinta-santa.md`, nome: 'Quinta-feira Santa' };
+    return { ano, estacao: 'semana-santa', arquivo: `${anoDir}/semana-santa/05-quinta.md`, nome: 'Quinta-feira Santa' };
   }
   if (mesmoDia(date, sextaSanta)) {
-    return { ano, estacao: 'semana-santa', arquivo: `${anoDir}/semana-santa/sexta-santa.md`, nome: 'Sexta-feira Santa' };
+    return { ano, estacao: 'semana-santa', arquivo: `${anoDir}/semana-santa/06-sexta.md`, nome: 'Sexta-feira Santa' };
   }
 
   // Páscoa e domingos da Páscoa (1-7)

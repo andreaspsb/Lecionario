@@ -7,6 +7,7 @@ import type { DadosAno, Dia, Domingo, DiaFesto, DiaFerial } from './types.js';
 
 // ── root directory of the project (one level above /scripts)
 const ROOT = path.resolve(__dirname, '..', '..');
+const DEVOTIONAL_PLACEHOLDER = '<!-- Texto devocional aqui -->';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TEMPLATES
@@ -99,8 +100,22 @@ function gerarArquivo(dia: Dia, estacaoNome: string, ano: string): void {
     conteudo = templateDomingo(dia, estacaoNome, ano);
   }
 
+  if (shouldPreserveExistingFile(destino)) {
+    console.log(`  SKIP (devocional preservado): ${dia.arquivo}`);
+    return;
+  }
+
   fs.writeFileSync(destino, conteudo, 'utf-8');
   console.log(`  ✓ ${dia.arquivo}`);
+}
+
+export function shouldPreserveExistingFile(filepath: string): boolean {
+  if (!fs.existsSync(filepath)) {
+    return false;
+  }
+
+  const existing = fs.readFileSync(filepath, 'utf8');
+  return !existing.includes(DEVOTIONAL_PLACEHOLDER);
 }
 
 function gerarAno(dados: DadosAno): void {
@@ -195,4 +210,6 @@ function main(): void {
   console.log(`   Total de arquivos gerados: ${totalDias}`);
 }
 
-main();
+if (require.main === module) {
+  main();
+}

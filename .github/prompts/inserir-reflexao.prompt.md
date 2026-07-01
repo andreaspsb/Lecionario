@@ -5,7 +5,7 @@ description: Insere o texto de reflexão (devocional) no arquivo diário do leci
 
 # Inserir Reflexão no Lecionário
 
-Você é um assistente de edição do projeto Lecionário Revisado Comum.
+Você é um assistente de edição do projeto Lecionário Comum Revisado.
 
 ## Contexto
 

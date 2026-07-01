@@ -7,7 +7,9 @@
     "generate": "tsx src/generate.ts",
     "generate-daily": "tsx src/generate-daily.ts",
     "fix-reflexao": "tsx src/fix-reflexao.ts",
-    "format-reflexao": "tsx src/format-reflexao.ts"
+    "format-reflexao": "tsx src/format-reflexao.ts",
+    "test": "tsx src/generate-preserve.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",

@@ -1,6 +1,6 @@
 # Geração do `sumario.md` — Documentação Técnica
 
-O `sumario.md` é o **índice mestre** do Lecionário. Serve tanto como referência humana quanto como **fonte de verdade para a ordenação** usada pelo `navegar.astro`. Ele é construído em **duas etapas sequenciais**, cada uma por um script diferente.
+O `sumario.md` é o **índice mestre** do Lecionário. Serve tanto como referência humana quanto como **fonte de verdade para a ordenação** usada pelo `navegar.astro` e pela navegação anterior/próximo de `leitura/[...slug].astro`. Ele é construído em **duas etapas sequenciais**, cada uma por um script diferente.
 
 ---
 
@@ -66,6 +66,8 @@ A função percorre `[anoA, anoB, anoC]` em ordem e gera o seguinte esquema:
 Cada linha tem **dois espaços de indentação** antes do símbolo — isso é relevante para o regex de intercalação na Etapa 2.
 
 O arquivo é gravado em `sumario.md` na raiz do projeto.
+
+**Proteção de conteúdo:** ao gerar cada arquivo dominical ou festivo, se o arquivo já existir e não contiver `<!-- Texto devocional aqui -->`, o script **não sobrescreve** (preserva texto devocional escrito manualmente). O `sumario.md` continua sendo regenerado.
 
 ---
 
@@ -212,9 +214,14 @@ A ordenação calendárica (Qui/Sex/Sáb → Dom → Seg/Ter/Qua) reflete o ritm
 
 ---
 
-## Uso pelo `navegar.astro`
+## Uso pelo site Astro
 
-O `navegar.astro` lê o `sumario.md` diretamente via `fetch('/Lecionario/sumario.md')` em runtime e o parseia linha a linha para montar os grupos de estação. Isso significa que **a ordem do `sumario.md` é a ordem de exibição no site** — nenhum algoritmo de ordenação adicional é aplicado no frontend.
+O site usa o `sumario.md` em **build time**, não em runtime no navegador.
+
+- `src/pages/navegar.astro` lê `sumario.md` com `fs.readFileSync`, cria um mapa `id → posição` e ordena as entradas da content collection por essa posição.
+- `src/lib/sumarioParser.ts` extrai os links do `sumario.md` e é usado por `src/pages/leitura/[...slug].astro` para calcular links de anterior/próximo.
+
+Isso significa que **a ordem do `sumario.md` é a ordem canônica de exibição e navegação no site**. Não há fetch público de `sumario.md` no frontend.
 
 ---
 
@@ -227,3 +234,11 @@ npm run generate-daily  # Etapa 2: 875 arquivos + intercala feriais no sumario.m
 ```
 
 Sempre executar nessa ordem. `generate-daily` pressupõe que o `sumario.md` já existe com as linhas dos domingos para poder fazer a intercalação.
+
+Para validar o site estático depois de mudanças em `sumario.md` ou nos arquivos de leitura, volte para a raiz do repositório e execute:
+
+```bash
+npm.cmd run validate
+```
+
+O comando `validate` roda testes e typecheck da raiz, testes e typecheck de `scripts/`, build Astro e indexação Pagefind. O teste da raiz valida que os 1097 links extraídos do `sumario.md` apontam para arquivos existentes, que não há slugs duplicados e que os 875 arquivos feriais seguem cobertos pelo índice canônico.

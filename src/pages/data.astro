@@ -1,0 +1,96 @@
+---
+import Base from '../layouts/Base.astro';
+
+const base = import.meta.env.BASE_URL;
+---
+
+<Base title="Escolher data" description="Encontre leituras por data no Lecionário Comum Revisado">
+  <section class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-100 mb-2">Escolher data</h1>
+    <p class="text-gray-400 text-sm">Localize a leitura correspondente a uma data específica</p>
+  </section>
+
+  <section data-pagefind-ignore class="rounded-xl border border-gray-800 bg-gray-900/40 p-5">
+    <form id="date-form" class="grid gap-4 sm:grid-cols-[1fr_auto]">
+      <label class="block">
+        <span class="block text-sm font-medium text-gray-300 mb-2">Data</span>
+        <input
+          id="date-input"
+          name="date"
+          type="date"
+          class="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-gray-100 focus:border-blue-500 focus:outline-none"
+        />
+      </label>
+      <button
+        type="submit"
+        class="self-end rounded-lg border border-blue-700 bg-blue-900/30 px-4 py-2 text-sm font-medium text-blue-200 hover:bg-blue-900/50 transition-colors"
+      >
+        Buscar
+      </button>
+    </form>
+
+    <div id="date-result" class="mt-6"></div>
+  </section>
+</Base>
+
+<script define:vars={{ base }}>
+  import { formatarData } from '../lib/liturgicalCalendar';
+  import { getReadingForDate, parseDateInput } from '../lib/dateNavigation';
+
+  const form = document.getElementById('date-form');
+  const input = document.getElementById('date-input');
+  const result = document.getElementById('date-result');
+
+  const toInputValue = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const renderReading = (value) => {
+    if (!result) return;
+
+    const date = parseDateInput(value);
+    if (!date) {
+      result.innerHTML = '<p class="text-sm text-red-300">Informe uma data válida.</p>';
+      return;
+    }
+
+    const reading = getReadingForDate(date);
+    if (!reading) {
+      result.innerHTML = '<p class="text-sm text-gray-400">Não foi possível identificar uma leitura para esta data.</p>';
+      return;
+    }
+
+    const href = `${base}/leitura/${reading.slug}`;
+    const source = reading.label === 'Domingo mais recente'
+      ? `<p class="text-xs text-gray-500 mt-1">Referência: ${formatarData(reading.sourceDate)}</p>`
+      : '';
+
+    result.innerHTML = `
+      <a href="${href}" class="block rounded-xl border border-gray-800 bg-gray-950/60 p-5 hover:bg-gray-800/40 transition-colors">
+        <span class="inline-flex rounded-full bg-blue-900/40 px-2 py-0.5 text-xs font-medium text-blue-300">${reading.label}</span>
+        <h2 class="mt-3 text-lg font-semibold text-gray-100">${reading.dia.nome}</h2>
+        <p class="mt-1 text-sm text-gray-400">${formatarData(reading.date)}</p>
+        ${source}
+      </a>
+    `;
+  };
+
+  if (input instanceof HTMLInputElement) {
+    const params = new URLSearchParams(window.location.search);
+    input.value = params.get('data') ?? toInputValue(new Date());
+    renderReading(input.value);
+  }
+
+  form?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (input instanceof HTMLInputElement) {
+      const params = new URLSearchParams(window.location.search);
+      params.set('data', input.value);
+      window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+      renderReading(input.value);
+    }
+  });
+</script>

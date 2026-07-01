@@ -2,22 +2,15 @@
 import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import { nomeEstacao, corLiturgica } from '../lib/liturgicalCalendar';
-import { readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { parseSumarioLinks } from '../lib/sumarioParser';
 
 // Carrega TODOS os arquivos .md via content collection (domingos, festas e feriais)
 const entries = await getCollection('leituras');
 
 // Constrói mapa de ordenação a partir do sumario.md (fonte da verdade da ordem litúrgica)
-// Usa import.meta.url para localizar o arquivo de forma confiável em qualquer ambiente (local e CI)
-const sumarioPath = join(dirname(fileURLToPath(import.meta.url)), '../../sumario.md');
-const sumarioText = readFileSync(sumarioPath, 'utf-8');
 const ordemSumario = new Map<string, number>();
-let ordemIdx = 0;
-for (const match of sumarioText.matchAll(/\(([^)]+\.md)\)/g)) {
-  const id = match[1].replace(/\.md$/, ''); // "ano-a/advento/01-domingo"
-  if (!ordemSumario.has(id)) ordemSumario.set(id, ordemIdx++);
+for (const [index, link] of parseSumarioLinks().entries()) {
+  ordemSumario.set(link.slug, index);
 }
 
 const ordemEstacoes = ['advento', 'natal', 'epifania', 'quaresma', 'semana-santa', 'pascoa', 'tempo-comum'];

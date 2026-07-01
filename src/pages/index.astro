@@ -1,22 +1,14 @@
 ---
 import Base from '../layouts/Base.astro';
 import DayCard from '../components/DayCard.astro';
-import {
-  getDiaLiturgico,
-  previousOrSameSunday,
-  formatarData,
-  nomeEstacao,
-} from '../lib/liturgicalCalendar';
+import { formatarData } from '../lib/liturgicalCalendar';
+import { getHomeHighlight } from '../lib/homeHighlight';
+import { getUpcomingReadings } from '../lib/dateNavigation';
 
 // Calcula o dia litúrgico atual em build time
 const hoje = new Date();
-const diaHoje = getDiaLiturgico(hoje);
-
-// Se hoje não é um dia de destaque, busca o domingo mais recente
-const domingoRecente = previousOrSameSunday(hoje);
-const diaDomingo = getDiaLiturgico(domingoRecente);
-
-const diaAtual = diaHoje ?? diaDomingo;
+const destaqueHome = getHomeHighlight(hoje);
+const proximosDias = getUpcomingReadings(hoje, 7);
 const base = import.meta.env.BASE_URL;
 ---
 
@@ -26,14 +18,16 @@ const base = import.meta.env.BASE_URL;
     <p class="text-gray-400">Leituras para o culto cristão em português — Anos A, B e C</p>
   </section>
 
-  {diaAtual ? (
+  {destaqueHome ? (
     <section class="mb-12">
       <div class="flex items-center gap-2 mb-4">
         <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-        <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wider">Domingo mais recente</h2>
+        <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wider">
+          {destaqueHome.label}
+        </h2>
       </div>
-      <p class="text-xs text-gray-500 mb-4">{formatarData(domingoRecente)}</p>
-      <DayCard dia={diaAtual} destaque />
+      <p class="text-xs text-gray-500 mb-4">{formatarData(destaqueHome.displayDate)}</p>
+      <DayCard dia={destaqueHome.dia} destaque />
     </section>
   ) : (
     <section class="mb-12 p-6 rounded-xl border border-gray-800 text-center text-gray-400">
@@ -41,6 +35,34 @@ const base = import.meta.env.BASE_URL;
       <a href={`${base}/navegar`} class="text-blue-400 hover:underline mt-2 inline-block">
         Navegar pelo índice →
       </a>
+    </section>
+  )}
+
+  {proximosDias.length > 0 && (
+    <section class="mb-12">
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <h2 class="text-lg font-semibold text-gray-100">Próximos 7 dias</h2>
+        <a href={`${base}/data`} class="text-sm text-blue-400 hover:underline">Escolher data</a>
+      </div>
+      <div class="divide-y divide-gray-800 rounded-xl border border-gray-800 bg-gray-900/30">
+        {proximosDias.map((reading) => (
+          <a
+            href={`${base}/leitura/${reading.slug}`}
+            class="grid gap-1 px-4 py-3 hover:bg-gray-800/40 transition-colors sm:grid-cols-[12rem_1fr]"
+          >
+            <div>
+              <p class="text-sm font-medium text-gray-200">{formatarData(reading.date)}</p>
+              <p class="text-xs text-gray-500">{reading.label}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-100">{reading.dia.nome}</p>
+              {reading.label === 'Domingo mais recente' && (
+                <p class="text-xs text-gray-500">Referência: {formatarData(reading.sourceDate)}</p>
+              )}
+            </div>
+          </a>
+        ))}
+      </div>
     </section>
   )}
 

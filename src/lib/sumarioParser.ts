@@ -10,7 +10,9 @@ export interface SumarioLink {
  * Lê o sumario.md e extrai a ordem canônica dos links de leitura.
  */
 export function parseSumarioLinks(): SumarioLink[] {
-  const sumarioPath = path.resolve(process.cwd(), 'sumario.md');
+  const projectRoot = process.env.INIT_CWD
+    ?? (path.basename(process.cwd()) === 'dist' ? path.dirname(process.cwd()) : process.cwd());
+  const sumarioPath = path.resolve(projectRoot, 'sumario.md');
 
   if (!fs.existsSync(sumarioPath)) {
     return [];

@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-serif: Georgia, serif;
+
+  --color-parchment-50: #fdf9f0;
+  --color-parchment-100: #faf0d7;
+  --color-parchment-200: #f4dfa8;
+
+  --color-liturgical-purple: #6b21a8;
+  --color-liturgical-green: #166534;
+  --color-liturgical-white: #f8fafc;
+  --color-liturgical-red: #991b1b;
+  --color-liturgical-gold: #b45309;
+}
