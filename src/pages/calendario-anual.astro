@@ -4,11 +4,12 @@ import { getCollection } from 'astro:content';
 import { buildAnnualCalendar, type AnnualCalendarEntry } from '../lib/annualCalendar';
 import { getAnoLiturgico } from '../lib/liturgicalCalendar';
 import { parseSumarioLinks } from '../lib/sumarioParser';
+import { getTodayInAppTimeZone } from '../lib/localDate';
 
 const entries = await getCollection('leituras');
 const order = parseSumarioLinks().map((link) => link.slug);
 const base = import.meta.env.BASE_URL;
-const currentAno = getAnoLiturgico(new Date());
+const currentAno = getAnoLiturgico(getTodayInAppTimeZone());
 const anos = ['A', 'B', 'C'];
 
 const items: AnnualCalendarEntry[] = entries.map((entry) => ({

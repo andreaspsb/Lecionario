@@ -1,7 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
+import { parseSumarioLinks } from '../lib/sumarioParser';
 
-const base = import.meta.env.BASE_URL;
+const sumarioLinks = parseSumarioLinks();
 ---
 
 <Base title="Escolher data" description="Encontre leituras por data no Lecionário Comum Revisado">
@@ -31,22 +32,21 @@ const base = import.meta.env.BASE_URL;
 
     <div id="date-result" class="mt-6"></div>
   </section>
+
+  <script id="sumario-links" type="application/json" set:html={JSON.stringify(sumarioLinks)}></script>
 </Base>
 
-<script define:vars={{ base }}>
+<script>
   import { formatarData } from '../lib/liturgicalCalendar';
-  import { getReadingForDate, parseDateInput } from '../lib/dateNavigation';
+  import { getReadingForDateWithLinks, parseDateInput } from '../lib/dateNavigationCore';
+  import { getTodayInAppTimeZone, toIsoDate } from '../lib/localDate';
 
   const form = document.getElementById('date-form');
   const input = document.getElementById('date-input');
   const result = document.getElementById('date-result');
-
-  const toInputValue = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const linksElement = document.getElementById('sumario-links');
+  const sumarioLinks = linksElement?.textContent ? JSON.parse(linksElement.textContent) : [];
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
   const renderReading = (value) => {
     if (!result) return;
@@ -57,7 +57,7 @@ const base = import.meta.env.BASE_URL;
       return;
     }
 
-    const reading = getReadingForDate(date);
+    const reading = getReadingForDateWithLinks(date, sumarioLinks);
     if (!reading) {
       result.innerHTML = '<p class="text-sm text-gray-400">Não foi possível identificar uma leitura para esta data.</p>';
       return;
@@ -80,7 +80,7 @@ const base = import.meta.env.BASE_URL;
 
   if (input instanceof HTMLInputElement) {
     const params = new URLSearchParams(window.location.search);
-    input.value = params.get('data') ?? toInputValue(new Date());
+    input.value = params.get('data') ?? toIsoDate(getTodayInAppTimeZone());
     renderReading(input.value);
   }
 

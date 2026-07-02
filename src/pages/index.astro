@@ -5,9 +5,10 @@ import { formatarData, nomeEstacao } from '../lib/liturgicalCalendar';
 import { getHomeHighlight } from '../lib/homeHighlight';
 import { getUpcomingReadings } from '../lib/dateNavigation';
 import { getCurrentSeasonKey } from '../lib/currentSeason';
+import { getTodayInAppTimeZone } from '../lib/localDate';
 
 // Calcula o dia litúrgico atual em build time
-const hoje = new Date();
+const hoje = getTodayInAppTimeZone();
 const destaqueHome = getHomeHighlight(hoje);
 const proximosDias = getUpcomingReadings(hoje, 7);
 const estacaoAtual = getCurrentSeasonKey(hoje);

@@ -38,6 +38,8 @@ Memoria/Global/decisoes.md
 - Não criar estrutura `leituras-diarias/` (removida) — arquivos diários ficam em `ano-[a|b|c]/[estacao]/`
 - Manter `sumario.md` como fonte canônica de ordenação; `navegar.astro` e `leitura/[...slug].astro` dependem dele em build time
 - Consulta por data, `/hoje`, home, calendário mensal e lista de próximos dias usam `src/lib/dateNavigation.ts`; resolver feriais pelo `sumario.md` antes do fallback para domingo recente e manter testes em `tests/dateNavigation.test.ts`
+- Para qualquer cálculo de "hoje", usar `src/lib/localDate.ts` com fuso canônico `America/Sao_Paulo`; não usar `new Date()` diretamente em páginas estáticas para data litúrgica corrente
+- Scripts client-side em páginas Astro não devem combinar `define:vars` com imports; se precisarem de dados do build, embutir JSON e importar apenas módulos browser-safe
 - Calendário mensal usa `src/lib/calendarMonth.ts`; manter testes em `tests/calendarMonth.test.ts`
 - Calendário anual usa `src/lib/annualCalendar.ts`; manter testes em `tests/annualCalendar.test.ts`
 - Semana litúrgica quinta–quarta usa `src/lib/liturgicalWeek.ts`; manter testes em `tests/liturgicalWeek.test.ts`

@@ -7,8 +7,9 @@ import { getReadingForDate } from '../lib/dateNavigation';
 import { parseSumarioLinks } from '../lib/sumarioParser';
 import { buildSeasonOverview, getCurrentSeasonKey, type SeasonEntry } from '../lib/currentSeason';
 import { buildLiturgicalWeeks, findLiturgicalWeekForSlug, type LiturgicalWeekEntry } from '../lib/liturgicalWeek';
+import { getTodayInAppTimeZone } from '../lib/localDate';
 
-const hoje = new Date();
+const hoje = getTodayInAppTimeZone();
 const leituraAtual = getReadingForDate(hoje);
 const seasonKey = getCurrentSeasonKey(hoje);
 const entries = await getCollection('leituras');

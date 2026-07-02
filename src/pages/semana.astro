@@ -5,13 +5,14 @@ import { getCollection } from 'astro:content';
 import { formatarData, nomeEstacao } from '../lib/liturgicalCalendar';
 import { getReadingForDate } from '../lib/dateNavigation';
 import { parseSumarioLinks } from '../lib/sumarioParser';
+import { getTodayInAppTimeZone } from '../lib/localDate';
 import {
   buildLiturgicalWeeks,
   findLiturgicalWeekForSlug,
   type LiturgicalWeekEntry,
 } from '../lib/liturgicalWeek';
 
-const hoje = new Date();
+const hoje = getTodayInAppTimeZone();
 const leituraAtual = getReadingForDate(hoje);
 const entries = await getCollection('leituras');
 const order = parseSumarioLinks().map((link) => link.slug);

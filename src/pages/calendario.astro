@@ -1,8 +1,11 @@
 ---
 import Base from '../layouts/Base.astro';
+import { getTodayInAppTimeZone } from '../lib/localDate';
+import { parseSumarioLinks } from '../lib/sumarioParser';
 
 const base = import.meta.env.BASE_URL;
-const currentYear = new Date().getFullYear();
+const currentYear = getTodayInAppTimeZone().getFullYear();
+const sumarioLinks = parseSumarioLinks();
 ---
 
 <Base title="Calendário" description="Calendário mensal de leituras do Lecionário Comum Revisado">
@@ -78,11 +81,14 @@ const currentYear = new Date().getFullYear();
 
     <div id="calendar-grid" class="grid grid-cols-1 gap-2 border-b border-gray-800 py-3 sm:grid-cols-7 sm:gap-0 sm:py-0"></div>
   </section>
+
+  <script id="sumario-links" type="application/json" set:html={JSON.stringify(sumarioLinks)}></script>
 </Base>
 
-<script define:vars={{ base }}>
-  import { getCalendarMonth, parseMonthInput } from '../lib/calendarMonth';
+<script>
+  import { getCalendarMonthWithLinks, parseMonthInput } from '../lib/calendarMonthCore';
   import { formatarData } from '../lib/liturgicalCalendar';
+  import { getTodayInAppTimeZone, toIsoDate } from '../lib/localDate';
 
   const form = document.getElementById('calendar-form');
   const monthInput = document.getElementById('calendar-month');
@@ -91,8 +97,12 @@ const currentYear = new Date().getFullYear();
   const grid = document.getElementById('calendar-grid');
   const prev = document.querySelector('[data-calendar-prev]');
   const next = document.querySelector('[data-calendar-next]');
+  const linksElement = document.getElementById('sumario-links');
+  const sumarioLinks = linksElement?.textContent ? JSON.parse(linksElement.textContent) : [];
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-  const today = new Date();
+  const today = getTodayInAppTimeZone();
+  const todayIso = toIsoDate(today);
   let selectedYear = today.getFullYear();
   let selectedMonthIndex = today.getMonth();
 
@@ -121,7 +131,7 @@ const currentYear = new Date().getFullYear();
   const renderCalendar = () => {
     if (!grid || !title) return;
 
-    const month = getCalendarMonth(selectedYear, selectedMonthIndex);
+    const month = getCalendarMonthWithLinks(selectedYear, selectedMonthIndex, sumarioLinks);
     title.textContent = month.label;
     grid.innerHTML = '';
 
@@ -139,7 +149,7 @@ const currentYear = new Date().getFullYear();
       const source = reading?.label === 'Domingo mais recente'
         ? `<p class="mt-1 text-[11px] text-gray-600">Ref. ${formatarData(reading.sourceDate)}</p>`
         : '';
-      const currentDay = day.isoDate === `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const currentDay = day.isoDate === todayIso;
 
       const cell = document.createElement('article');
       cell.className = `min-h-28 border border-gray-800 bg-gray-950/40 p-3 sm:border-l-0 sm:border-t-0 ${currentDay ? 'ring-1 ring-blue-500/60' : ''}`;
