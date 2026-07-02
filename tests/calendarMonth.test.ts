@@ -16,8 +16,9 @@ assert.equal(christmas.reading?.slug, 'ano-b/natal/00c-natividade-proprio3');
 
 const weekday = december.days.find((day) => day.isoDate === '2026-12-29');
 assert.ok(weekday);
-assert.equal(weekday.reading?.label, 'Domingo mais recente');
-assert.equal(weekday.reading?.sourceDate.toISOString().slice(0, 10), '2026-12-27');
+assert.equal(weekday.reading?.label, 'Leitura da data');
+assert.equal(weekday.reading?.sourceDate.toISOString().slice(0, 10), '2026-12-29');
+assert.equal(weekday.reading?.slug, 'ano-b/natal/semana-1-terca');
 
 assert.deepEqual(parseMonthInput('2026', '12'), { year: 2026, monthIndex: 11 });
 assert.deepEqual(parseMonthInput('2026', '01'), { year: 2026, monthIndex: 0 });

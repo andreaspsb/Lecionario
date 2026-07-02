@@ -14,10 +14,17 @@ assert.equal(natal.slug, 'ano-b/natal/00c-natividade-proprio3');
 
 const weekday = getReadingForDate(new Date(2026, 5, 16));
 assert.ok(weekday);
-assert.equal(weekday.label, 'Domingo mais recente');
+assert.equal(weekday.label, 'Leitura da data');
 assert.equal(weekday.date.toISOString().slice(0, 10), '2026-06-16');
-assert.equal(weekday.sourceDate.toISOString().slice(0, 10), '2026-06-14');
-assert.equal(weekday.slug, 'ano-a/tempo-comum/prop06-domingo');
+assert.equal(weekday.sourceDate.toISOString().slice(0, 10), '2026-06-16');
+assert.equal(weekday.slug, 'ano-a/tempo-comum/semana-4-terca');
+
+const thursdayBeforeSunday = getReadingForDate(new Date(2026, 5, 11));
+assert.ok(thursdayBeforeSunday);
+assert.equal(thursdayBeforeSunday.label, 'Leitura da data');
+assert.equal(thursdayBeforeSunday.date.toISOString().slice(0, 10), '2026-06-11');
+assert.equal(thursdayBeforeSunday.sourceDate.toISOString().slice(0, 10), '2026-06-11');
+assert.equal(thursdayBeforeSunday.slug, 'ano-a/tempo-comum/semana-4-quinta');
 
 const upcoming = getUpcomingReadings(new Date(2026, 11, 24), 3);
 assert.equal(upcoming.length, 3);

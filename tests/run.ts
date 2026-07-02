@@ -3,6 +3,8 @@ import './homeHighlight.test';
 import './dateNavigation.test';
 import './navigationFilters.test';
 import './calendarMonth.test';
+import './annualCalendar.test';
+import './liturgicalWeek.test';
 import './currentSeason.test';
 import './readingExport.test';
 import './devotionalStatus.test';

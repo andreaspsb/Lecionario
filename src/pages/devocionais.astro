@@ -29,10 +29,12 @@ const files = entries.map((entry) => {
 });
 
 const report = buildDevotionalReport(files);
-const pendingFiles = report.files
-  .filter((file) => file.status !== 'filled')
+const sortedFiles = report.files
   .sort((a, b) => statusOrder(a.status) - statusOrder(b.status) || a.slug.localeCompare(b.slug));
-const samplePendingFiles = pendingFiles.slice(0, 80);
+const anos = Array.from(new Set(report.files.map((file) => file.ano))).sort();
+const estacoes = Array.from(new Set(report.files.map((file) => file.estacao))).sort((a, b) => (
+  nomeEstacao(a.toLowerCase()).localeCompare(nomeEstacao(b.toLowerCase()))
+));
 
 function statusOrder(status: DevotionalStatus): number {
   if (status === 'missing-section') return 0;
@@ -131,39 +133,153 @@ function statusClass(status: DevotionalStatus): string {
     </div>
   </section>
 
-  <section>
-    <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h2 class="text-lg font-semibold text-gray-100">Arquivos pendentes</h2>
-        <p class="mt-1 text-sm text-gray-500">
-          {pendingFiles.length} arquivos exigem revisão editorial.
-        </p>
-      </div>
-      {pendingFiles.length > samplePendingFiles.length && (
-        <p class="text-sm text-gray-500">
-          Mostrando os primeiros {samplePendingFiles.length}.
-        </p>
-      )}
+  <section data-pagefind-ignore class="mb-6 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
+    <div class="grid gap-4 md:grid-cols-3">
+      <label class="block">
+        <span class="mb-2 block text-xs font-medium uppercase tracking-wider text-gray-500">Ano</span>
+        <select data-devotional-filter="ano" class="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none">
+          <option value="all">Todos</option>
+          {anos.map((ano) => (
+            <option value={ano}>Ano {ano}</option>
+          ))}
+        </select>
+      </label>
+
+      <label class="block">
+        <span class="mb-2 block text-xs font-medium uppercase tracking-wider text-gray-500">Estação</span>
+        <select data-devotional-filter="estacao" class="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none">
+          <option value="all">Todas</option>
+          {estacoes.map((estacao) => (
+            <option value={estacao}>{nomeEstacao(estacao.toLowerCase())}</option>
+          ))}
+        </select>
+      </label>
+
+      <label class="block">
+        <span class="mb-2 block text-xs font-medium uppercase tracking-wider text-gray-500">Status</span>
+        <select data-devotional-filter="status" class="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none">
+          <option value="placeholder" selected>Com placeholder</option>
+          <option value="filled">Preenchidos</option>
+          <option value="missing-section">Sem seção</option>
+          <option value="all">Todos</option>
+        </select>
+      </label>
     </div>
 
-    {samplePendingFiles.length > 0 ? (
-      <div class="divide-y divide-gray-800 rounded-xl border border-gray-800 bg-gray-900/30">
-        {samplePendingFiles.map((file: DevotionalFileStatus) => (
-          <a href={`${base}/leitura/${file.slug}`} class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-gray-800/50">
-            <div>
-              <p class="text-sm font-medium text-gray-100">{file.title}</p>
-              <p class="mt-1 text-xs text-gray-500">Ano {file.ano} · {file.estacao} · {file.tipo}</p>
-            </div>
-            <span class={`rounded-full border px-2.5 py-1 text-xs font-medium ${statusClass(file.status)}`}>
-              {statusLabel(file.status)}
-            </span>
-          </a>
-        ))}
-      </div>
-    ) : (
-      <div class="rounded-xl border border-emerald-800 bg-emerald-950/20 p-5 text-sm text-emerald-100">
-        Todas as reflexões estão preenchidas.
-      </div>
-    )}
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <p class="text-sm text-gray-400">
+        <span data-devotional-count>{report.placeholderCount}</span> arquivos exibidos
+      </p>
+      <button type="button" data-devotional-reset class="text-sm text-blue-400 hover:underline">
+        Voltar aos pendentes
+      </button>
+    </div>
+  </section>
+
+  <section>
+    <div class="mb-4">
+      <h2 class="text-lg font-semibold text-gray-100">Arquivos</h2>
+      <p class="mt-1 text-sm text-gray-500">Use os filtros para priorizar a revisão editorial.</p>
+    </div>
+
+    <div class="divide-y divide-gray-800 rounded-xl border border-gray-800 bg-gray-900/30">
+      {sortedFiles.map((file: DevotionalFileStatus) => (
+        <a
+          href={`${base}/leitura/${file.slug}`}
+          data-devotional-item
+          data-ano={file.ano}
+          data-estacao={file.estacao}
+          data-status={file.status}
+          class={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-gray-800/50 ${file.status !== 'placeholder' ? 'hidden' : ''}`}
+        >
+          <div>
+            <p class="text-sm font-medium text-gray-100">{file.title}</p>
+            <p class="mt-1 text-xs text-gray-500">Ano {file.ano} · {file.estacao} · {file.tipo}</p>
+          </div>
+          <span class={`rounded-full border px-2.5 py-1 text-xs font-medium ${statusClass(file.status)}`}>
+            {statusLabel(file.status)}
+          </span>
+        </a>
+      ))}
+    </div>
+    <p data-devotional-empty class="mt-4 hidden rounded-xl border border-gray-800 bg-gray-900/30 p-4 text-sm text-gray-500">
+      Nenhum arquivo corresponde aos filtros selecionados.
+    </p>
   </section>
 </Base>
+
+<script>
+  const controls = {
+    ano: document.querySelector('[data-devotional-filter="ano"]'),
+    estacao: document.querySelector('[data-devotional-filter="estacao"]'),
+    status: document.querySelector('[data-devotional-filter="status"]'),
+  };
+  const items = Array.from(document.querySelectorAll('[data-devotional-item]'));
+  const count = document.querySelector('[data-devotional-count]');
+  const reset = document.querySelector('[data-devotional-reset]');
+  const empty = document.querySelector('[data-devotional-empty]');
+
+  const getFilterValue = (key: keyof typeof controls) => {
+    const control = controls[key];
+    return control instanceof HTMLSelectElement ? control.value : 'all';
+  };
+
+  const updateUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    for (const key of Object.keys(controls) as Array<keyof typeof controls>) {
+      const value = getFilterValue(key);
+      if (value === 'all' || (key === 'status' && value === 'placeholder')) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    }
+    const query = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+  };
+
+  const applyDevotionalFilters = () => {
+    const ano = getFilterValue('ano');
+    const estacao = getFilterValue('estacao');
+    const status = getFilterValue('status');
+    let visibleCount = 0;
+
+    for (const item of items) {
+      if (!(item instanceof HTMLElement)) continue;
+      const visible = (ano === 'all' || item.dataset.ano === ano)
+        && (estacao === 'all' || item.dataset.estacao === estacao)
+        && (status === 'all' || item.dataset.status === status);
+      item.classList.toggle('hidden', !visible);
+      if (visible) visibleCount++;
+    }
+
+    if (count) count.textContent = String(visibleCount);
+    empty?.classList.toggle('hidden', visibleCount > 0);
+    updateUrl();
+  };
+
+  const restoreDevotionalFilters = () => {
+    const params = new URLSearchParams(window.location.search);
+    for (const [key, control] of Object.entries(controls)) {
+      if (control instanceof HTMLSelectElement) {
+        control.value = params.get(key) ?? (key === 'status' ? 'placeholder' : 'all');
+      }
+    }
+  };
+
+  for (const control of Object.values(controls)) {
+    control?.addEventListener('change', applyDevotionalFilters);
+  }
+
+  reset?.addEventListener('click', () => {
+    for (const [key, control] of Object.entries(controls)) {
+      if (control instanceof HTMLSelectElement) {
+        control.value = key === 'status' ? 'placeholder' : 'all';
+      }
+    }
+    applyDevotionalFilters();
+  });
+
+  restoreDevotionalFilters();
+  applyDevotionalFilters();
+</script>

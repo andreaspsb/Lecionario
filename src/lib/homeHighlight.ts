@@ -1,8 +1,5 @@
-import {
-  type DiaLiturgico,
-  getDiaLiturgico,
-  previousOrSameSunday,
-} from './liturgicalCalendar';
+import type { DiaLiturgico } from './liturgicalCalendar';
+import { getReadingForDate } from './dateNavigation';
 
 export interface HomeHighlight {
   dia: DiaLiturgico;
@@ -11,26 +8,17 @@ export interface HomeHighlight {
 }
 
 export function getHomeHighlight(date: Date): HomeHighlight | null {
-  const diaHoje = getDiaLiturgico(date);
+  const reading = getReadingForDate(date);
 
-  if (diaHoje) {
-    return {
-      dia: diaHoje,
-      label: 'Hoje',
-      displayDate: date,
-    };
-  }
-
-  const domingoRecente = previousOrSameSunday(date);
-  const diaDomingo = getDiaLiturgico(domingoRecente);
-
-  if (!diaDomingo) {
+  if (!reading) {
     return null;
   }
 
+  const usesFallback = reading.label === 'Domingo mais recente';
+
   return {
-    dia: diaDomingo,
-    label: 'Domingo mais recente',
-    displayDate: domingoRecente,
+    dia: reading.dia,
+    label: usesFallback ? 'Domingo mais recente' : 'Hoje',
+    displayDate: usesFallback ? reading.sourceDate : reading.date,
   };
 }

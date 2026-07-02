@@ -23,7 +23,7 @@ Memoria/Global/decisoes.md
 - `npm run build` na raiz → `astro build && pagefind --site dist --output-path dist/pagefind`
 - `npm run generate` → 222 arquivos dominicais; `npm run generate-daily` → 875 arquivos diários (usa API HTTP Vanderbilt — lento)
 - Saída de conteúdo: `ano-[a|b|c]/[estacao]/` + `sumario.md` na raiz como índice canônico
-- Rotas principais: `/`, `/hoje`, `/data`, `/calendario`, `/devocionais`, `/estacao`, `/navegar`, `/buscar`, `/leitura/[...slug]`
+- Rotas principais: `/`, `/hoje`, `/data`, `/calendario`, `/calendario-anual`, `/semana`, `/devocionais`, `/estacao`, `/navegar`, `/buscar`, `/leitura/[...slug]`
 - Estações: `advento`, `natal`, `epifania`, `quaresma`, `semana-santa`, `pascoa`, `tempo-comum`
 - Meta de cobertura: **875 arquivos diários, 0 não linkados** no sumario.md
 
@@ -37,9 +37,11 @@ Memoria/Global/decisoes.md
 - Verificar cobertura após qualquer geração: Total 875, Missing 0
 - Não criar estrutura `leituras-diarias/` (removida) — arquivos diários ficam em `ano-[a|b|c]/[estacao]/`
 - Manter `sumario.md` como fonte canônica de ordenação; `navegar.astro` e `leitura/[...slug].astro` dependem dele em build time
-- Consulta por data e lista de próximos dias usam `src/lib/dateNavigation.ts`; manter testes em `tests/dateNavigation.test.ts`
+- Consulta por data, `/hoje`, home, calendário mensal e lista de próximos dias usam `src/lib/dateNavigation.ts`; resolver feriais pelo `sumario.md` antes do fallback para domingo recente e manter testes em `tests/dateNavigation.test.ts`
 - Calendário mensal usa `src/lib/calendarMonth.ts`; manter testes em `tests/calendarMonth.test.ts`
-- Status de devocionais usa `src/lib/devotionalStatus.ts`; manter testes em `tests/devotionalStatus.test.ts`
+- Calendário anual usa `src/lib/annualCalendar.ts`; manter testes em `tests/annualCalendar.test.ts`
+- Semana litúrgica quinta–quarta usa `src/lib/liturgicalWeek.ts`; manter testes em `tests/liturgicalWeek.test.ts`
+- Status e filtros de devocionais usam `src/lib/devotionalStatus.ts`; manter testes em `tests/devotionalStatus.test.ts`
 - Estação atual usa `src/lib/currentSeason.ts`; manter testes em `tests/currentSeason.test.ts`
 - Exportação/cópia/compartilhamento de leituras usa `src/lib/readingExport.ts`; manter testes em `tests/readingExport.test.ts`
 - Filtros de `/navegar` usam `src/lib/navigationFilters.ts`; manter testes em `tests/navigationFilters.test.ts`

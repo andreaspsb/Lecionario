@@ -8,14 +8,16 @@ Site estático com as leituras do **Lecionário Comum Revisado** (*Revised Commo
 
 - **Página inicial** — exibe a leitura litúrgica corrente ou o domingo mais recente
 - **Próximos 7 dias** — atalhos na home para leituras próximas por data
-- **Hoje** — redireciona para a leitura calculada para a data atual
-- **Data** — seletor de data para localizar a leitura correspondente
+- **Hoje** — redireciona para a leitura da data atual, incluindo feriais quando houver
+- **Data** — seletor de data para localizar a leitura correspondente, com fallback para o domingo recente
 - **Calendário** — visualização mensal com a leitura resolvida para cada dia
+- **Calendário anual** — visão do ano litúrgico A/B/C com domingos e festas por estação
+- **Semana litúrgica** — visualização quinta–quarta da semana vinculada ao domingo de referência
 - **Estação atual** — sequência da estação litúrgica com recentes, próximos dias e próximos domingos/festas
 - **Navegar** — índice completo por ano e estação, com filtros por ano, estação e tipo
 - **Buscar** — busca full-text em todos os 1097 arquivos de leituras (Pagefind)
 - **Exportar leitura** — copiar texto, baixar Markdown/HTML e compartilhar link resumido nas páginas de leitura
-- **Devocionais** — relatório interno em `/devocionais` com status das reflexões por ano e estação
+- **Devocionais** — relatório interno em `/devocionais` com status das reflexões e filtros por ano, estação e preenchimento
 - **Tema dark** com cores litúrgicas por estação (roxo, branco, vermelho, verde)
 - **Deploy automático** para GitHub Pages via GitHub Actions
 
@@ -52,6 +54,8 @@ src/                     # Interface web (Astro + Tailwind)
     hoje.astro           # Redirecionamento para a leitura de hoje
     data.astro           # Consulta por data
     calendario.astro     # Calendário mensal de leituras
+    calendario-anual.astro # Domingos e festas do ano litúrgico
+    semana.astro         # Semana litúrgica atual (quinta a quarta)
     devocionais.astro    # Relatório interno de reflexões/devocionais
     estacao.astro        # Sequência da estação litúrgica atual
     navegar.astro        # Índice por ano/estação com filtros
@@ -59,7 +63,9 @@ src/                     # Interface web (Astro + Tailwind)
     leitura/[...slug]    # Página individual de leitura
   lib/
     liturgicalCalendar.ts  # Cálculo de Páscoa, ano litúrgico, dia atual
-    dateNavigation.ts      # Consulta por data e próximos dias
+    annualCalendar.ts      # Calendário anual por domingos/festas e estação
+    liturgicalWeek.ts      # Montagem da semana litúrgica quinta–quarta
+    dateNavigation.ts      # Consulta por data, feriais e próximos dias
     calendarMonth.ts       # Montagem de calendário mensal
     currentSeason.ts       # Recorte da estação litúrgica atual
     devotionalStatus.ts    # Status editorial das seções ## Reflexão
@@ -114,7 +120,7 @@ npm.cmd run validate
 
 `npm.cmd run validate` executa testes e typecheck da raiz, testes e typecheck de `scripts/`, build Astro e indexação Pagefind.
 
-`npm.cmd test` na raiz valida regras de calendário litúrgico, navegação por data, calendário mensal, estação atual, status de devocionais, exportação de leituras, filtros do índice, parsing do `sumario.md` e integridade dos 1097 arquivos de leitura. O teste em `scripts/` valida a proteção contra sobrescrita de devocionais preenchidos.
+`npm.cmd test` na raiz valida regras de calendário litúrgico, navegação por data com resolução ferial pelo `sumario.md`, calendário mensal, calendário anual, semana litúrgica quinta–quarta, estação atual, status de devocionais, exportação de leituras, filtros do índice, parsing do `sumario.md` e integridade dos 1097 arquivos de leitura. O teste em `scripts/` valida a proteção contra sobrescrita de devocionais preenchidos.
 
 O build gera o site estático em `dist/` e indexa as páginas com Pagefind. Em 2026-06-30, a validação local gerou 1104 páginas HTML e indexou 1097 páginas de leituras.
 

@@ -1,0 +1,52 @@
+---
+import type { LiturgicalWeek, LiturgicalWeekDay, LiturgicalWeekEntry } from '../lib/liturgicalWeek';
+
+interface Props {
+  week: LiturgicalWeek<LiturgicalWeekEntry>;
+  base: string;
+  currentSlug?: string;
+  compact?: boolean;
+}
+
+const { week, base, currentSlug, compact = false } = Astro.props;
+
+const positionLabels: Record<LiturgicalWeekDay['position'], string> = {
+  before: 'Antes do domingo',
+  anchor: 'Domingo',
+  after: 'Após o domingo',
+};
+
+function tipoLabel(tipo: string): string {
+  if (tipo === 'Ferial') return 'Leitura diária';
+  if (tipo === 'Dia Festo') return 'Festa';
+  return tipo;
+}
+---
+
+<div class={compact ? 'grid gap-2 sm:grid-cols-2 lg:grid-cols-4' : 'grid gap-3 md:grid-cols-7'}>
+  {week.days.map((day) => {
+    const isCurrent = day.slug === currentSlug;
+    return (
+      <a
+        href={`${base}/leitura/${day.slug}`}
+        class={`block rounded-lg border p-3 transition-colors ${
+          isCurrent
+            ? 'border-blue-500 bg-blue-950/30'
+            : day.position === 'anchor'
+              ? 'border-gray-700 bg-gray-900/70 hover:bg-gray-800/70'
+              : 'border-gray-800 bg-gray-900/30 hover:bg-gray-800/50'
+        }`}
+      >
+        <p class="mb-2 text-[11px] font-medium uppercase tracking-wider text-gray-500">
+          {positionLabels[day.position]}
+        </p>
+        <p class="text-sm font-semibold leading-snug text-gray-100">
+          {day.entry.title}
+        </p>
+        <p class="mt-2 text-xs text-gray-500">
+          {tipoLabel(day.entry.tipo)}
+        </p>
+      </a>
+    );
+  })}
+</div>

@@ -1,0 +1,124 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { buildAnnualCalendar, type AnnualCalendarEntry } from '../lib/annualCalendar';
+import { getAnoLiturgico } from '../lib/liturgicalCalendar';
+import { parseSumarioLinks } from '../lib/sumarioParser';
+
+const entries = await getCollection('leituras');
+const order = parseSumarioLinks().map((link) => link.slug);
+const base = import.meta.env.BASE_URL;
+const currentAno = getAnoLiturgico(new Date());
+const anos = ['A', 'B', 'C'];
+
+const items: AnnualCalendarEntry[] = entries.map((entry) => ({
+  slug: entry.id,
+  title: entry.data.titulo ?? entry.data.nome ?? 'Leitura',
+  ano: entry.data.ano,
+  estacao: entry.data.estacao,
+  tipo: entry.data.tipo,
+}));
+
+const calendars = anos.map((ano) => buildAnnualCalendar(items, { ano, order }));
+
+function tipoLabel(tipo: string): string {
+  if (tipo === 'Dia Festo') return 'Festa';
+  return tipo;
+}
+---
+
+<Base title="Calendário anual" description="Domingos e festas do ano litúrgico">
+  <section class="mb-8">
+    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Ano litúrgico</p>
+    <h1 class="text-3xl font-bold text-gray-100">Calendário anual</h1>
+    <p class="mt-3 max-w-2xl text-sm leading-relaxed text-gray-400">
+      Domingos e festas em ordem canônica, organizados por estação.
+    </p>
+  </section>
+
+  <section data-pagefind-ignore class="mb-8 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
+    <div class="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+      <label class="block">
+        <span class="mb-2 block text-xs font-medium uppercase tracking-wider text-gray-500">Ano</span>
+        <select
+          data-annual-calendar-control
+          class="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none"
+        >
+          {anos.map((ano) => (
+            <option value={ano} selected={ano === currentAno}>Ano {ano}</option>
+          ))}
+        </select>
+      </label>
+      <a href={`${base}/navegar?tipo=dominical-festivo`} class="rounded-lg border border-gray-800 px-4 py-2 text-center text-sm text-gray-300 hover:bg-gray-800/60">
+        Ver índice
+      </a>
+    </div>
+  </section>
+
+  {calendars.map((calendar) => (
+    <section data-annual-calendar={calendar.ano} class={calendar.ano === currentAno ? 'block' : 'hidden'}>
+      <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-semibold text-gray-100">Ano {calendar.ano}</h2>
+          <p class="mt-1 text-sm text-gray-500">{calendar.total} domingos e festas</p>
+        </div>
+      </div>
+
+      <div class="space-y-8">
+        {calendar.seasons.map((season) => (
+          <section>
+            <div class="mb-3 flex items-center gap-3">
+              <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-gray-400">{season.title}</h3>
+              <span class="h-px flex-1 bg-gray-800"></span>
+              <span class="text-xs text-gray-600">{season.entries.length}</span>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              {season.entries.map((entry, index) => (
+                <a
+                  href={`${base}/leitura/${entry.slug}`}
+                  class="group rounded-xl border border-gray-800 bg-gray-900/30 p-4 transition-colors hover:bg-gray-800/50"
+                >
+                  <div class="mb-3 flex items-center justify-between gap-3">
+                    <span class="text-xs font-medium text-gray-600">{String(index + 1).padStart(2, '0')}</span>
+                    <span class="rounded-full border border-gray-800 px-2 py-0.5 text-[11px] text-gray-500">
+                      {tipoLabel(entry.tipo)}
+                    </span>
+                  </div>
+                  <p class="text-sm font-medium leading-snug text-gray-200 group-hover:text-white">
+                    {entry.title}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </section>
+  ))}
+</Base>
+
+<script>
+  const control = document.querySelector('[data-annual-calendar-control]');
+  const sections = Array.from(document.querySelectorAll('[data-annual-calendar]'));
+
+  const showAnnualCalendar = (ano) => {
+    for (const section of sections) {
+      if (!(section instanceof HTMLElement)) continue;
+      section.classList.toggle('hidden', section.dataset.annualCalendar !== ano);
+      section.classList.toggle('block', section.dataset.annualCalendar === ano);
+    }
+    const params = new URLSearchParams(window.location.search);
+    params.set('ano', ano);
+    window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+  };
+
+  if (control instanceof HTMLSelectElement) {
+    const params = new URLSearchParams(window.location.search);
+    const requestedAno = params.get('ano');
+    if (requestedAno && ['A', 'B', 'C'].includes(requestedAno)) {
+      control.value = requestedAno;
+    }
+    showAnnualCalendar(control.value);
+    control.addEventListener('change', () => showAnnualCalendar(control.value));
+  }
+</script>

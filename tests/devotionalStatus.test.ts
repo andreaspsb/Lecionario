@@ -3,6 +3,7 @@ import {
   analyzeDevotionalSource,
   buildDevotionalReport,
   DEVOTIONAL_PLACEHOLDER,
+  filterDevotionalFiles,
 } from '../src/lib/devotionalStatus';
 
 const placeholder = analyzeDevotionalSource({
@@ -83,6 +84,28 @@ assert.deepEqual(
       filledCount: 0,
       missingSectionCount: 1,
     },
+  ],
+);
+
+assert.deepEqual(
+  filterDevotionalFiles(report.files, { ano: 'A', estacao: 'Advento', status: 'placeholder' })
+    .map((file) => file.slug),
+  ['ano-a/advento/01-domingo'],
+);
+
+assert.deepEqual(
+  filterDevotionalFiles(report.files, { status: 'filled' })
+    .map((file) => file.slug),
+  ['ano-a/advento/semana-1-segunda'],
+);
+
+assert.deepEqual(
+  filterDevotionalFiles(report.files, { ano: 'all', estacao: 'all', status: 'all' })
+    .map((file) => file.slug),
+  [
+    'ano-a/advento/01-domingo',
+    'ano-a/advento/semana-1-segunda',
+    'ano-b/natal/01-domingo',
   ],
 );
 

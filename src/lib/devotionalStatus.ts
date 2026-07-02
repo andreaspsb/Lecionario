@@ -38,6 +38,12 @@ export interface DevotionalReport {
   byGroup: DevotionalGroupStatus[];
 }
 
+export interface DevotionalFilters {
+  ano?: string;
+  estacao?: string;
+  status?: DevotionalStatus | 'all';
+}
+
 const REFLECTION_HEADING = /^##\s+Reflex[aã]o\b/im;
 
 function completionPercent(filled: number, total: number): number {
@@ -109,4 +115,16 @@ export function buildDevotionalReport(files: DevotionalFileStatus[]): Devotional
     files,
     byGroup,
   };
+}
+
+export function filterDevotionalFiles<T extends DevotionalFileStatus>(
+  files: T[],
+  filters: DevotionalFilters,
+): T[] {
+  return files.filter((file) => {
+    const matchesAno = !filters.ano || filters.ano === 'all' || file.ano === filters.ano;
+    const matchesEstacao = !filters.estacao || filters.estacao === 'all' || file.estacao === filters.estacao;
+    const matchesStatus = !filters.status || filters.status === 'all' || file.status === filters.status;
+    return matchesAno && matchesEstacao && matchesStatus;
+  });
 }
